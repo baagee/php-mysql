@@ -1,0 +1,25 @@
+{
+  "name": "baagee/php-mysql",
+  "description": "PHP mysql library",
+  "type": "library",
+  "minimum-stability": "dev",
+  "license": "MIT",
+  "keywords": [
+    "PHP",
+    "mysql"
+  ],
+  "authors": [
+    {
+      "name": "BaAGee",
+      "email": "2274313786@qq.com"
+    }
+  ],
+  "require": {
+    "php": ">=7.1"
+  },
+  "autoload": {
+    "psr-4": {
+      "BaAGee\\MySQL\\": "src/"
+    }
+  }
+}
