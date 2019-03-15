@@ -1,6 +1,6 @@
 <?php
 /**
- * Desc:
+ * Desc: DB抽象类
  * User: baagee
  * Date: 2019/3/15
  * Time: 下午5:13

@@ -60,7 +60,7 @@ for ($i = 0; $i < 5; $i++) {
     var_dump($db->getLastSql());
 }
 /*查询测试*/
-$list = $db->query('select * from student_score where id >:id order by id desc limit 2', ['id' => mt_rand(10, 100)]);
+$list = $db->query('select * from student_score where id >? order by id desc limit 2', [mt_rand(10, 100)]);
 var_dump($list);
 var_dump($db->getLastSql());
 
@@ -87,12 +87,10 @@ function transactionTest($db)
     $db->execute($sql, $userData);
     var_dump($db->getLastSql());
 
-    $sql        = 'update student_score set english=:english where id = :id';
-    $updateData = [
-        'english' => mt_rand(30, 100),
-        'id'      => 330
-    ];
-    throw new Exception('发生失误');
+    $sql        = 'update student_score set english=? where id = ?';
+    $updateData = [mt_rand(30, 100), 330];
+
+    // throw new Exception('发生失误');
     $db->execute($sql, $updateData);
     var_dump($db->getLastSql());
 

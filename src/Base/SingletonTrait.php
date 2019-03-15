@@ -38,5 +38,5 @@ trait SingletonTrait
      * @param array $params 构造实例所需参数
      * @return mixed
      */
-    abstract public static function getInstance(array $params = []);
+    abstract public static function getInstance($params = []);
 }

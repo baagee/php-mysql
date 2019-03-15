@@ -1,6 +1,6 @@
 <?php
 /**
- * Desc:
+ * Desc: MySQL操作基本类
  * User: baagee
  * Date: 2019/3/15
  * Time: 下午5:10
@@ -152,23 +152,45 @@ class DB extends DBAbstract implements DBInterface
      */
     private function replaceSqlData()
     {
-        // 开发模式每条sql都会到这里处理，生产模式只有sql出错时才会到这里处理
-        $full_sql = $this->lastPrepareSql;
-        foreach ($this->lastPrepareData as $field => $value) {
-            if ($field{0} !== ':') {
-                $field = ':' . $field;
+        $fullSql = $this->lastPrepareSql;
+        if (strpos($fullSql, '?') !== false) {
+            // 使用？占位符
+            $tmp1    = explode('?', $fullSql);
+            $fullSql = '';
+            $count   = count($tmp1);
+            for ($i = 0; $i < $count; $i++) {
+                $fullSql .= $tmp1[$i];
+                if ($i !== $count - 1) {
+                    if (isset($this->lastPrepareData[$i])) {
+                        $value = $this->lastPrepareData[$i];
+                        $type  = gettype($value);
+                        if (!in_array($type, ['integer', 'double'])) {
+                            $value = '\'' . $value . '\'';
+                        }
+                        $fullSql .= $value;
+                    } else {
+                        $fullSql .= '?';
+                    }
+                }
             }
-            $type = gettype($value);
-            switch ($type) {
-                case 'integer':
-                case 'double':
-                    $full_sql = str_replace($field, $value, $full_sql);
-                    break;
-                default:
-                    $full_sql = str_replace($field, '\'' . $value . '\'', $full_sql);
+        } else {
+            // 使用:field占位
+            foreach ($this->lastPrepareData as $field => $value) {
+                if ($field{0} !== ':') {
+                    $field = ':' . $field;
+                }
+                $type = gettype($value);
+                switch ($type) {
+                    case 'integer':
+                    case 'double':
+                        $fullSql = str_replace($field, $value, $fullSql);
+                        break;
+                    default:
+                        $fullSql = str_replace($field, '\'' . $value . '\'', $fullSql);
+                }
             }
         }
-        return $full_sql;
+        return $fullSql;
     }
 
     /**

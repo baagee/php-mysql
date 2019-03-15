@@ -9,118 +9,10 @@
 namespace BaAGee\MySQL;
 
 use BaAGee\MySQL\Base\ModelAbstract;
-use BaAGee\MySQL\MySQL\DB;
+use BaAGee\MySQL\Base\ModelInterface;
 
-class Model extends ModelAbstract
+class Model extends ModelAbstract implements ModelInterface
 {
-    use SingletonTrait;
-
-    /**
-     * 表名
-     * @var string
-     */
-    protected $_table = '';
-    /**
-     * 表文件
-     * @var array|mixed
-     */
-    private $__tableSchema = [];
-    /**
-     * @var DB
-     */
-    private $__dbObj = null;
-    /**
-     * 最后一次预处理sql语句
-     * @var string
-     */
-    private $__lastPrepareSql = '';
-    /**
-     * 最后一次处理sql的数据参数
-     * @var array
-     */
-    private $__lastPrepareData = [];
-    /**
-     * 要查询的条件
-     * @var string
-     */
-    private $__whereConditions = '';
-    /**
-     * having条件
-     * @var string
-     */
-    private $__havingConditions = '';
-    /**
-     * order by field desc/asc
-     * @var string
-     */
-    private $__orderBy = '';
-    /**
-     * group by field
-     * @var string
-     */
-    private $__groupBy = '';
-    /**
-     * limit offset,limit
-     * @var string
-     */
-    private $__limit = '';
-    /**
-     * fields
-     * @var string
-     */
-    private $__fields = '';
-
-    /**
-     * 加锁类型
-     * @var string
-     */
-    private $__lock = '';
-
-    /**
-     * 获取model对象
-     * @return mixed|Model|static
-     * @param string $table 表名
-     * @throws \Exception
-     */
-    final public static function getInstance($table = '')
-    {
-        if (!isset(self::$_instance[static::class])) {
-            $obj = new static();
-            if (empty($obj->_table)) {
-                if (empty($table)) {
-                    throw new \Exception('Model table 不能为空');
-                } else {
-                    $obj->_table = $table;
-                }
-            }
-            $schema_file = implode(DIRECTORY_SEPARATOR, [self::$config['schemaBasePath'], $obj->_table . '.php']);
-            if (is_file($schema_file)) {
-                $obj->__tableSchema = include $schema_file;
-            } else {
-                throw new \Exception($obj->_table . ' schema 文件不存在');
-            }
-            $obj->__dbObj                   = DB::getInstance();
-            self::$_instance[static::class] = $obj;
-        }
-        return self::$_instance[static::class];
-    }
-
-    /**
-     * 清除上次执行的
-     */
-    private function __clear()
-    {
-        $this->__havingConditions = '';
-        $this->__orderBy          = '';
-        $this->__whereConditions  = '';
-        $this->__limit            = '';
-        $this->__groupBy          = '';
-        $this->__fields           = '';
-        $this->__lastPrepareSql   = '';
-        $this->__lastPrepareData  = [];
-        $this->__lock             = '';
-    }
-
     /**
      * 设置查询条件，可以多次调用 and连接
      * @param array $conditions  条件数组
@@ -341,7 +233,7 @@ class Model extends ModelAbstract
      */
     private function __execute()
     {
-        $res = $this->__dbObj->execute($this->__lastPrepareSql, $this->__lastPrepareData);
+        $res = $this->dbObject->execute($this->__lastPrepareSql, $this->__lastPrepareData);
         $this->__clear();
         return $res;
     }
@@ -370,7 +262,7 @@ class Model extends ModelAbstract
         $placeholder            = rtrim($placeholder, ', ');
         $this->__lastPrepareSql .= $fields . ') VALUES(' . $placeholder . ')';
         if ($this->__execute()) {
-            return $this->__dbObj->lastInsertId();
+            return $this->dbObject->lastInsertId();
         } else {
             return false;
         }
@@ -471,7 +363,7 @@ class Model extends ModelAbstract
      */
     private function __query()
     {
-        $res = $this->__dbObj->query($this->__lastPrepareSql, $this->__lastPrepareData);
+        $res = $this->dbObject->query($this->__lastPrepareSql, $this->__lastPrepareData);
         $this->__clear();
         return $res;
     }
@@ -630,7 +522,7 @@ class Model extends ModelAbstract
      */
     final public function getLastSql()
     {
-        return $this->__dbObj->getLastSql();
+        return $this->dbObject->getLastSql();
     }
 
     /**
@@ -640,7 +532,7 @@ class Model extends ModelAbstract
      */
     final public function query(string $sql, array $data = [])
     {
-        return $this->__dbObj->query($sql, $data);
+        return $this->dbObject->query($sql, $data);
     }
 
     /**
@@ -650,33 +542,15 @@ class Model extends ModelAbstract
      */
     final public function execute(string $sql, array $data = [])
     {
-        return $this->__dbObj->execute($sql, $data);
+        return $this->dbObject->execute($sql, $data);
     }
 
     /**
      * @return mixed
      */
-    final public function lastInsertId()
+    final public function getLastInsertId()
     {
-        return $this->__dbObj->lastInsertId();
-    }
-
-    /**
-     * 自动插入的字段
-     * @return array
-     */
-    protected function __autoUpdate()
-    {
-        return [];
-    }
-
-    /**
-     * 自动更新的字段
-     * @return array
-     */
-    protected function __autoInsert()
-    {
-        return [];
+        return $this->dbObject->getLastInsertId();
     }
 
     /**

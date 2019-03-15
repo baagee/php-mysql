@@ -1,15 +1,20 @@
 <?php
 /**
- * Desc:
+ * Desc: 获取链接类
  * User: baagee
  * Date: 2019/3/15
  * Time: 下午5:10
  */
+
 namespace BaAGee\MySQL;
 
 
 use BaAGee\MySQL\Base\SingletonTrait;
 
+/**
+ * Class Connection
+ * @package BaAGee\MySQL
+ */
 final class Connection
 {
     use SingletonTrait;
