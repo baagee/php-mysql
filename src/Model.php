@@ -11,7 +11,7 @@ namespace BaAGee\MySQL;
 use BaAGee\MySQL\Base\ModelAbstract;
 use BaAGee\MySQL\MySQL\DB;
 
-abstract class Model extends ModelAbstract
+class Model extends ModelAbstract
 {
     use SingletonTrait;
 
@@ -93,7 +93,7 @@ abstract class Model extends ModelAbstract
                     $obj->_table = $table;
                 }
             }
-            $schema_file = implode(DIRECTORY_SEPARATOR, [static::$config['schemaBasePath'], $obj->_table . '.php']);
+            $schema_file = implode(DIRECTORY_SEPARATOR, [self::$config['schemaBasePath'], $obj->_table . '.php']);
             if (is_file($schema_file)) {
                 $obj->__tableSchema = include $schema_file;
             } else {

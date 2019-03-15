@@ -6,7 +6,7 @@
  * Time: 下午6:35
  */
 
-namespace BaAGee\MySQL;
+namespace BaAGee\MySQL\Base;
 /**
  * Trait SingletonTrait
  * @package Sim
@@ -16,20 +16,20 @@ trait SingletonTrait
     /**
      * @var null 类实例
      */
-    private static $_instance = null;
+    protected static $_instance = null;
 
     /**
      * 禁止new
      * SingletonTrait constructor.
      */
-    private function __construct()
+    final private function __construct()
     {
     }
 
     /**
      * 禁止克隆
      */
-    private function __clone()
+    final private function __clone()
     {
     }
 
