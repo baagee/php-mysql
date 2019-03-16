@@ -9,7 +9,6 @@
 namespace BaAGee\MySQL\Base;
 
 use BaAGee\MySQL\DB;
-use BaAGee\MySQL\Model;
 use BaAGee\MySQL\SQLBuilder;
 
 /**
@@ -41,28 +40,43 @@ abstract class ModelAbstract
     protected $sqlBuilder = null;
 
     /**
-     * @param string $table
-     * @return Model
+     * @return \BaAGee\MySQL\Model
      * @throws \Exception
      */
-    final public static function getInstance($table = ''): Model
+    final public static function getInstance()
     {
-        // todo 如何做
-        if (!isset(self::$_instance[$table])) {
+        if (!isset(self::$_instance[static::class])) {
             $obj = new static();
             if (empty($obj->table)) {
-                if (empty($table)) {
-                    throw new \Exception('Model table 不能为空');
-                } else {
-                    $obj->table = $table;
-                }
+                throw new \Exception('Model table 不能为空');
+                // if (empty($table)) {
+                // } else {
+                //     $obj->table = $table;
+                // }
             }
             $obj->dbObject   = DB::getInstance();
-            $obj->sqlBuilder = SQLBuilder::getInstance($obj->table);
-            // todo 获取fields
+            $columns         = self::getTableFields($obj->dbObject->query('DESC `' . $obj->table . '`'));
+            $obj->sqlBuilder = SQLBuilder::getInstance($obj->table, $columns);
+            unset($columns);
             self::$_instance[static::class] = $obj;
         }
         return self::$_instance[static::class];
+    }
+
+    private static function getTableFields($descTable)
+    {
+        $columns = [];
+        foreach ($descTable as $v) {
+            if ((strpos($v['Type'], 'int') !== false)) {
+                $field_type = 'int';
+            } else if (strpos($v['Type'], 'decimal') !== false) {
+                $field_type = 'float';
+            } else {
+                $field_type = 'string';
+            }
+            $columns[$v['Field']] = $field_type;
+        }
+        return $columns;
     }
 
 

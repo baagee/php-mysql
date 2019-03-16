@@ -12,10 +12,46 @@ $config = include __DIR__ . '/config.php';
 \BaAGee\MySQL\DB::init($config);
 $db = \BaAGee\MySQL\DB::getInstance();
 
-$model = \BaAGee\MySQL\Model::getInstance('article');
-var_dump($model);
+class ArticleModel extends \BaAGee\MySQL\Model
+{
+    protected $table = 'article';
+}
 
-// $model->select();
+class StudentModel extends \BaAGee\MySQL\Model
+{
+    protected $table = 'student_score';
+}
+
+$articleModel = ArticleModel::getInstance();
+$list         = $articleModel->where(['id' => ['>', 330]])->select();
+var_dump($list);
+var_dump($articleModel->getLastSql());
+
+
+$res = $articleModel->insert(createArticleRow());
+var_dump($articleModel->getLastSql());
+
+$res = $articleModel->batchInsert([
+    createArticleRow(),
+    createArticleRow(),
+]);
+var_dump($articleModel->getLastSql());
+
+var_dump($res);
+
+$studentModel = StudentModel::getInstance();
+
+$res = $studentModel->where([
+    'is_delete' => ['=', 0],
+    'math'      => ['<', 40, 'or'],
+    'chinese'   => ['>', 80]
+])->limit(2, 2)->orderBy(['create_time' => 'desc'])
+    ->having(['history' => ['<', 60], 'age' => ['<', 18]])->orHaving(['biology' => ['>=', 70, 'or'], 'sex' => ['=', 1]])
+    ->orWhere(['class_id' => ['>', 5]])->selectFields(['student_id', 'history', 'biology', 'student_name', 'sex', 'age', 'class_id'])
+    ->select();
+
+var_dump($res);
+die;
 
 echo 'OVER' . PHP_EOL;
 

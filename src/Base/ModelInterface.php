@@ -18,7 +18,7 @@ interface ModelInterface
 
     public function orHaving(array $conditions);
 
-    public function fields(array $fields);
+    public function selectFields(array $fields);
 
     public function limit(int $offset, int $limit);
 
