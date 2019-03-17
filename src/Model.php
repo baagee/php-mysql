@@ -134,7 +134,7 @@ abstract class Model extends ModelAbstract implements ModelInterface
     {
         $field = trim($field, '`');
         $step  = abs(intval($step));
-        list($prepareSql, $prepareData) = $this->sqlBuilder->buildIncrementOrDecrement($field, $step, $isIncrement)->get();
+        list($prepareSql, $prepareData) = $this->sqlBuilder->buildIncrementOrDecrement($field, $step, $isIncrement)->buildUpdate()->get();
         return $this->execute($prepareSql, $prepareData);
     }
 
@@ -159,7 +159,7 @@ abstract class Model extends ModelAbstract implements ModelInterface
         if (method_exists($this, '__autoInsert')) {
             $data = array_merge($data, $this->__autoInsert());
         }
-        list($prepareSql, $prepareData) = $this->sqlBuilder->buildInsert($data)->get();
+        list($prepareSql, $prepareData) = $this->sqlBuilder->setInsertFields(array_keys($data))->buildInsert()->get();
         if ($this->execute($prepareSql, $prepareData)) {
             return $this->getLastInsertId();
         } else {
@@ -207,7 +207,7 @@ abstract class Model extends ModelAbstract implements ModelInterface
         if (method_exists($this, '__autoUpdate')) {
             $data = array_merge($data, $this->__autoUpdate());
         }
-        list($prepareSql, $prepareData) = $this->sqlBuilder->buildUpdate($data)->get();
+        list($prepareSql, $prepareData) = $this->sqlBuilder->setUpdateFields($data)->buildUpdate()->get();
         return $this->execute($prepareSql, $prepareData);
     }
 

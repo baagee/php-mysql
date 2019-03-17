@@ -6,8 +6,6 @@
  * Time: 上午12:27
  */
 include __DIR__ . '/../vendor/autoload.php';
-// gA@fF5aQ=rsfdlh
-//sim_test 3307  mysql574@password
 /*// mysql配置
     'mysql' => [
         'host'            => 'mysql_server',

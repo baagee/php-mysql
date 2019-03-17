@@ -14,57 +14,74 @@ final class SQLBuilder
 {
     use SingletonTrait;
 
+    /**
+     * @var string 表名
+     */
     private $table = '';
 
     /**
-     * 最后一次预处理sql语句
-     * @var string
+     * @var string 预处理sql语句
      */
     private $prepareSql = '';
     /**
-     * 最后一次处理sql的数据参数
-     * @var array
+     * @var array 处理sql的预处理数据参数
      */
     private $prepareData = [];
 
     /**
-     * 要查询的条件
-     * @var string
+     * @var string where条件
      */
     private $whereConditions = '';
     /**
-     * having条件
-     * @var string
+     * @var string having条件
      */
     private $havingConditions = '';
+
     /**
-     * order by field desc/asc
-     * @var string
+     * @var string order by field desc/asc
      */
     private $orderBy = '';
+
     /**
-     * group by field
-     * @var string
+     * @var string group by field
      */
     private $groupBy = '';
+
     /**
-     * limit offset,limit
-     * @var string
+     * @var string limit offset,limit
      */
     private $limit = '';
+
     /**
-     * fields
-     * @var string
+     * @var string 要查询的字段
      */
     private $selectFields = '';
 
+    /**
+     * @var array 表字段及其类型 [field1=>int,field2=>string]
+     */
     private $tableFields = [];
 
     /**
-     * 加锁类型
-     * @var string
+     * @var string 加锁类型 lock in share mode / lock for update
      */
     private $lock = '';
+
+    /**
+     * @var string 更新的字段eg: name='harry'
+     */
+    private $updateFields = '';
+
+    /**
+     * @var string 插入的字段eg: name,age,sex
+     */
+    private $insertFields = '';
+
+    /**
+     * @var string 插入字段的值eg: ('name',12,'man'),('name',12,'man')
+     */
+    private $insertValues = '';
+
 
     public static function getInstance(string $table, array $columns)
     {
@@ -78,45 +95,45 @@ final class SQLBuilder
         return self::$_instance[$table];
     }
 
-    public function buildSelect()
+    public function setWhereConditions(string $whereConditions, $isAnd = true)
     {
-        $this->prepareSql = 'SELECT ';
-        if (empty($this->selectFields)) {
-            $this->prepareSql .= '*';
+        if (empty($this->whereConditions)) {
+            $this->whereConditions = ' WHERE ' . $whereConditions;
         } else {
-            $this->prepareSql .= $this->selectFields;
-        }
-        $this->prepareSql .= (' FROM `' . $this->table . '`' . $this->whereConditions . $this->groupBy .
-            $this->havingConditions . $this->orderBy . $this->limit . $this->lock);
-        return $this;
-    }
-
-    public function buildUpdate($data)
-    {
-        $this->prepareSql = 'UPDATE `' . $this->table . '` SET ';
-        foreach ($data as $field => $value) {
-            if (in_array($field, array_keys($this->tableFields))) {
-                $this->prepareSql                .= '`' . $field . '` = :' . $field . ', ';
-                $this->prepareData[':' . $field] = $value;
+            if ($isAnd) {
+                $this->whereConditions .= ' AND ' . $whereConditions;
+            } else {
+                $this->whereConditions .= ' OR ' . $whereConditions;
             }
         }
-        $this->prepareSql = rtrim($this->prepareSql, ', ');
-        if (!empty($this->whereConditions)) {
-            $this->prepareSql .= $this->whereConditions;
+        return $this;
+    }
+
+    public function setHavingConditions(string $havingConditions, $isAnd = true)
+    {
+        if (empty($this->havingConditions)) {
+            $this->havingConditions = ' HAVING ' . $havingConditions;
+        } else {
+            if ($isAnd) {
+                $this->havingConditions .= ' AND ' . $havingConditions;
+            } else {
+                $this->havingConditions .= ' OR ' . $havingConditions;
+            }
         }
         return $this;
     }
 
-    public function buildIncrementOrDecrement(string $field, int $step, bool $isIncrement = true)
+    /**
+     * 设置更新的字段及其值
+     * @param string $data
+     * @return $this
+     */
+    public function setUpdateFields(string $data)
     {
-        $this->prepareSql = 'UPDATE `' . $this->table . '` SET `' . $field . '` = `' . $field . '`';
-        if ($isIncrement) {
-            $this->prepareSql .= '+' . $step;
+        if (!empty($this->updateFields)) {
+            $this->updateFields .= ', ' . $data;
         } else {
-            $this->prepareSql .= '-' . $step;
-        }
-        if (!empty($this->whereConditions)) {
-            $this->prepareSql .= $this->whereConditions;
+            $this->updateFields = ' ' . $data;
         }
         return $this;
     }
@@ -231,22 +248,34 @@ final class SQLBuilder
         return $this;
     }
 
-    public function setLock(string $lock)
+    /**
+     * 生成了个update语句
+     * @return $this
+     */
+    public function buildUpdate()
     {
-        $this->lock = $lock;
-        return $this;
-    }
-
-    public function setSumOrCountOrAvgOrMinOrMaxField($field, $function)
-    {
-        $field = trim(trim($field), '`');
-        if ($field !== '*') {
-            $field = '`' . trim($field, '`') . '`';
+        $this->prepareSql = 'UPDATE `' . $this->table . '` SET ' . $this->updateFields;
+        if (!empty($this->whereConditions)) {
+            $this->prepareSql .= $this->whereConditions;
         }
-        $this->selectFields = strtoupper($function) . '(' . $field . ') AS _' . $function;
         return $this;
     }
 
+    /**
+     * 生成insert语句
+     * @return $this
+     */
+    public function buildInsert()
+    {
+        $this->prepareSql = 'INSERT INTO `' . $this->table . '` ' . $this->insertFields . ' VALUES ' . $this->insertValues;
+        return $this;
+    }
+
+
+    /**
+     * 删除语句
+     * @return $this
+     */
     public function buildDelete()
     {
         $this->prepareSql = 'DELETE FROM `' . $this->table . '`';
@@ -256,6 +285,54 @@ final class SQLBuilder
         return $this;
     }
 
+    /**
+     * 设置插入的字段
+     * @param string $insertFields eg: name/name,age,sex
+     * @return $this
+     */
+    public function setInsertFields(string $insertFields)
+    {
+        if (!empty($this->insertFields)) {
+            $this->insertFields = rtrim($this->insertFields, ')');
+            $this->insertFields .= ', ' . $insertFields;
+        } else {
+            $this->insertFields = '(' . $insertFields;
+        }
+        $this->insertFields .= ')';
+        return $this;
+    }
+
+    /**
+     * 设置要插入的值
+     * @param string $insertValues eg:('name','age','sex')/('name','age','sex'),('name','age','sex')
+     * @return $this
+     */
+    public function setInsertValues(string $insertValues)
+    {
+        if (!empty($this->insertValues)) {
+            $this->insertValues .= ', ' . $insertValues;
+        } else {
+            $this->insertValues = $insertValues;
+        }
+        return $this;
+    }
+
+    /**
+     * 设置查询锁
+     * @param string $lock
+     * @return $this
+     */
+    public function setLock(string $lock)
+    {
+        $this->lock = $lock;
+        return $this;
+    }
+
+    /**
+     * 设置orderBy
+     * @param array $orderBy
+     * @return $this
+     */
     public function setOrderBy(array $orderBy)
     {
         if (!empty($this->orderBy)) {
@@ -300,62 +377,31 @@ final class SQLBuilder
         return $this;
     }
 
-    public function setSelectFields(array $fields)
+    /**
+     * 设置查询的字段
+     * @param string|array $fields eg:[name,age]/'name,age'/'*'
+     * @return $this
+     */
+    public function setSelectFields($fields)
     {
-        foreach ($fields as $field) {
-            if ($field === '*') {
-                $this->selectFields = ' *';
-                break;
+        if (is_array($fields)) {
+            foreach ($fields as $field) {
+                if ($field === '*') {
+                    $this->selectFields = ' *';
+                    break;
+                }
+                if (in_array($field, array_keys($this->tableFields))) {
+                    $this->selectFields .= ', `' . trim($field, '`') . '`';
+                }
             }
-            if (in_array($field, array_keys($this->tableFields))) {
-                $this->selectFields .= ', `' . trim($field, '`') . '`';
+        } else {
+            if ($fields === '*') {
+                $this->selectFields = '*';
+            } else {
+                $this->selectFields .= ', ' . $fields;
             }
         }
         $this->selectFields = trim($this->selectFields, ',');
-        return $this;
-    }
-
-    public function buildInsert(array $data)
-    {
-        $this->prepareSql  = 'INSERT INTO `' . $this->table . '` (';
-        $fields            = $placeholder = '';
-        $this->prepareData = [];
-        foreach ($data as $k => $v) {
-            if (in_array($k, array_keys($this->tableFields))) {
-                $fields                      .= '`' . $k . '`, ';
-                $placeholder                 .= ':' . $k . ', ';
-                $this->prepareData[':' . $k] = $v;
-            }
-        }
-        $fields           = rtrim($fields, ', ');
-        $placeholder      = rtrim($placeholder, ', ');
-        $this->prepareSql .= $fields . ') VALUES(' . $placeholder . ')';
-        return $this;
-    }
-
-    public function buildBatchInsert(array $data)
-    {
-        $this->prepareSql  = 'INSERT INTO `' . $this->table . '` (';
-        $fields            = [];
-        $zz                = '';
-        $this->prepareData = [];
-        foreach ($data as $i => $item_array) {
-            $z = '(';
-            foreach ($item_array as $k => $v) {
-                if (in_array($k, array_keys($this->tableFields))) {
-                    $a = '`' . $k . '`';
-                    if (!in_array($a, $fields)) {
-                        $fields[] = $a;
-                    }
-                    $z                                      .= ':' . $k . '_' . $i . ', ';
-                    $this->prepareData[':' . $k . '_' . $i] = $v;
-                }
-            }
-            $zz .= rtrim($z, ', ') . '),';
-        }
-        $fields           = implode(', ', $fields);
-        $this->prepareSql .= $fields;
-        $this->prepareSql = rtrim($this->prepareSql, ', ') . ') VALUES ' . rtrim($zz, ',');
         return $this;
     }
 
@@ -396,8 +442,11 @@ final class SQLBuilder
         $this->limit            = '';
         $this->groupBy          = '';
         $this->selectFields     = '';
+        $this->lock             = '';
+        $this->insertFields     = '';
+        $this->insertValues     = '';
+        $this->updateFields     = '';
         $this->prepareSql       = '';
         $this->prepareData      = [];
-        $this->lock             = '';
     }
 }

@@ -18,7 +18,7 @@ class DB extends DBAbstract implements DBInterface
      */
     private $PDOStatement;
     /**
-     * @var
+     * @var int 事务计数
      */
     private $transactionCount;
     /**
@@ -26,15 +26,15 @@ class DB extends DBAbstract implements DBInterface
      */
     private $inTransaction = false;
     /**
-     * @var string
+     * @var string 预处理SQL
      */
     private $lastPrepareSql = '';
     /**
-     * @var array
+     * @var array 预处理绑定的数据
      */
     private $lastPrepareData = [];
     /**
-     * @var string
+     * @var string 执行的完整SQL
      */
     private $fullSql = '';
 
@@ -46,6 +46,7 @@ class DB extends DBAbstract implements DBInterface
      */
     final public function query(string $sql, array $data = [])
     {
+        $this->fullSql         = '';
         $this->lastPrepareSql  = $sql;
         $this->lastPrepareData = $data;
         if ($this->inTransaction) {
@@ -54,7 +55,6 @@ class DB extends DBAbstract implements DBInterface
         } else {
             $link = self::getConnection(true);
         }
-        $this->fullSql      = $this->replaceSqlData();
         $this->PDOStatement = $link->prepare($this->lastPrepareSql);
         if ($this->PDOStatement === false) {
             $errorInfo = $link->errorInfo();
@@ -73,10 +73,10 @@ class DB extends DBAbstract implements DBInterface
      */
     final public function execute(string $sql, array $data = [])
     {
+        $this->fullSql         = '';
         $this->lastPrepareSql  = $sql;
         $this->lastPrepareData = $data;
         $link                  = self::getConnection(false);
-        $this->fullSql         = $this->replaceSqlData();
         $this->PDOStatement    = $link->prepare($this->lastPrepareSql);
         if ($this->PDOStatement === false) {
             $errorInfo = $link->errorInfo();
@@ -206,7 +206,6 @@ class DB extends DBAbstract implements DBInterface
         try {
             $self->beginTransaction();
             $res = call_user_func_array($func, $params);
-            var_dump($res);
             $self->commit();
             return $res;
         } catch (\Throwable $e) {

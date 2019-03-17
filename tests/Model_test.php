@@ -23,14 +23,16 @@ class StudentModel extends \BaAGee\MySQL\Model
 }
 
 $articleModel = ArticleModel::getInstance();
-$list         = $articleModel->where(['id' => ['>', 330]])->select();
-var_dump($list);
-var_dump($articleModel->getLastSql());
+// $list         = $articleModel->where(['id' => ['>', 330]])->select();
+// var_dump($list);
+// var_dump($articleModel->getLastSql());
 
 
 $res = $articleModel->insert(createArticleRow());
 var_dump($articleModel->getLastSql());
 
+
+die;
 $res = $articleModel->batchInsert([
     createArticleRow(),
     createArticleRow(),
