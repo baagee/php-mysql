@@ -57,7 +57,8 @@ class DB extends DBAbstract implements DBInterface
         }
         $this->PDOStatement = $link->prepare($this->lastPrepareSql);
         if ($this->PDOStatement === false) {
-            $errorInfo = $link->errorInfo();
+            $errorInfo     = $link->errorInfo();
+            $this->fullSql = $this->replaceSqlData();
             throw new \PDOException($errorInfo[2] . ' #SQL:' . $this->fullSql, $errorInfo[1]);
         }
         $this->PDOStatement->execute($this->lastPrepareData);
@@ -79,7 +80,8 @@ class DB extends DBAbstract implements DBInterface
         $link                  = self::getConnection(false);
         $this->PDOStatement    = $link->prepare($this->lastPrepareSql);
         if ($this->PDOStatement === false) {
-            $errorInfo = $link->errorInfo();
+            $errorInfo     = $link->errorInfo();
+            $this->fullSql = $this->replaceSqlData();
             throw new \PDOException($errorInfo[2] . ' #SQL:' . $this->fullSql, $errorInfo[1]);
         }
         $this->PDOStatement->execute($this->lastPrepareData);
@@ -230,7 +232,7 @@ class DB extends DBAbstract implements DBInterface
      * 处理检查sql异常
      * @param $link
      */
-    private function sqlBugInfo($link)
+    private function sqlBugInfo(\PDO $link)
     {
         if ($this->PDOStatement === false) {
             $errorInfo = $link->errorInfo();

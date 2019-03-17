@@ -8,7 +8,6 @@
 
 namespace BaAGee\MySQL;
 
-
 use BaAGee\MySQL\Base\SingletonTrait;
 
 /**

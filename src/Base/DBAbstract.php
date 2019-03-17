@@ -66,21 +66,11 @@ abstract class DBAbstract
         return self::$_instance;
     }
 
-    /**
-     * 检查mysql配置文件
-     * @param array $config
-     * @param bool  $slave
-     * @return array
-     * @throws \Exception
-     */
-    private static function checkConfig(array $config, bool $slave = false)
+    private static function checkMySQLConfig($config, $slave = false)
     {
         $msg = 'DB';
         if ($slave) {
             $msg .= ' Slave';
-        }
-        if (empty($config)) {
-            throw new \Exception($msg . '配置不能为空');
         }
         if (empty($config['host'])) {
             throw new \Exception($msg . '配置host不能为空');
@@ -108,8 +98,31 @@ abstract class DBAbstract
             if (empty($config['weight'])) {
                 $config['weight'] = 1;
             }
+        }
+        return $config;
+    }
+
+    /**
+     * 检查mysql配置文件
+     * @param array $config
+     * @param bool  $slave
+     * @return array
+     * @throws \Exception
+     */
+    private static function checkConfig(array $config, bool $slave = false)
+    {
+        if (empty($config)) {
+            throw new \Exception('DB配置不能为空');
+        }
+        if ($slave) {
+            foreach ($config as &$item) {
+                $item = self::checkMySQLConfig($item, true);
+            }
         } else {
+            // 检查每一项
+            $config = self::checkMySQLConfig($config, false);
             if (!empty($config['slave'])) {
+                // 配置了从库
                 $config['slave'] = self::checkConfig($config['slave'], true);
             }
         }

@@ -43,6 +43,7 @@ $config = include __DIR__ . '/config.php';
 
 /*DB测试*/
 \BaAGee\MySQL\DB::init($config);
+
 $db  = \BaAGee\MySQL\DB::getInstance();
 $db1 = \BaAGee\MySQL\DB::getInstance();
 var_dump($db === $db1);
