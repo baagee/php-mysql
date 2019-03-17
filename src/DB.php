@@ -11,7 +11,11 @@ namespace BaAGee\MySQL;
 use BaAGee\MySQL\Base\DBAbstract;
 use BaAGee\MySQL\Base\DBInterface;
 
-class DB extends DBAbstract implements DBInterface
+/**
+ * Class DB
+ * @package BaAGee\MySQL
+ */
+final class DB extends DBAbstract implements DBInterface
 {
     /**
      * @var \PDOStatement
@@ -39,6 +43,31 @@ class DB extends DBAbstract implements DBInterface
     private $fullSql = '';
 
     /**
+     * @return \PDOStatement
+     */
+    final public function getPDOStatement(): \PDOStatement
+    {
+        return $this->PDOStatement;
+    }
+
+    /**
+     * @return string
+     */
+    final public function getLastPrepareSql(): string
+    {
+        return $this->lastPrepareSql;
+    }
+
+    /**
+     * @return array
+     */
+    final public function getLastPrepareData(): array
+    {
+        return $this->lastPrepareData;
+    }
+
+
+    /**
      * 查询sql
      * @param string $sql  要查询的sql
      * @param array  $data 查询条件
@@ -46,24 +75,31 @@ class DB extends DBAbstract implements DBInterface
      */
     final public function query(string $sql, array $data = [])
     {
+        $this->runSql(self::getConnection(!$this->inTransaction), $sql, $data);
+        return $this->PDOStatement->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * 执行SQL
+     * @param \PDO   $connection
+     * @param string $sql
+     * @param array  $data
+     */
+    private function runSql(\PDO $connection, string $sql, array $data = [])
+    {
         $this->fullSql         = '';
         $this->lastPrepareSql  = $sql;
         $this->lastPrepareData = $data;
-        if ($this->inTransaction) {
-            //事务查询操作在主库
-            $link = self::getConnection(false);
-        } else {
-            $link = self::getConnection(true);
-        }
-        $this->PDOStatement = $link->prepare($this->lastPrepareSql);
+        $this->PDOStatement    = $connection->prepare($this->lastPrepareSql);
         if ($this->PDOStatement === false) {
-            $errorInfo     = $link->errorInfo();
-            $this->fullSql = $this->replaceSqlData();
-            throw new \PDOException($errorInfo[2] . ' #SQL:' . $this->fullSql, $errorInfo[1]);
+            $errorInfo = $connection->errorInfo();
+            throw new \PDOException($errorInfo[2] . ' #SQL:' . $this->getLastSql(), $errorInfo[1]);
         }
         $this->PDOStatement->execute($this->lastPrepareData);
-        $this->sqlBugInfo($link);
-        return $this->PDOStatement->fetchAll(\PDO::FETCH_ASSOC);
+        $errorInfo = $this->PDOStatement->errorInfo();
+        if ($errorInfo[0] != '00000') {
+            throw new \PDOException($errorInfo[2] . ' #SQL:' . $this->getLastSql(), $errorInfo[1]);
+        }
     }
 
     /**
@@ -74,18 +110,7 @@ class DB extends DBAbstract implements DBInterface
      */
     final public function execute(string $sql, array $data = [])
     {
-        $this->fullSql         = '';
-        $this->lastPrepareSql  = $sql;
-        $this->lastPrepareData = $data;
-        $link                  = self::getConnection(false);
-        $this->PDOStatement    = $link->prepare($this->lastPrepareSql);
-        if ($this->PDOStatement === false) {
-            $errorInfo     = $link->errorInfo();
-            $this->fullSql = $this->replaceSqlData();
-            throw new \PDOException($errorInfo[2] . ' #SQL:' . $this->fullSql, $errorInfo[1]);
-        }
-        $this->PDOStatement->execute($this->lastPrepareData);
-        $this->sqlBugInfo($link);
+        $this->runSql(self::getConnection(false), $sql, $data);
         return $this->PDOStatement->rowCount();
     }
 
@@ -226,21 +251,5 @@ class DB extends DBAbstract implements DBInterface
             $this->fullSql = $this->replaceSqlData();
         }
         return $this->fullSql;
-    }
-
-    /**
-     * 处理检查sql异常
-     * @param $link
-     */
-    private function sqlBugInfo(\PDO $link)
-    {
-        if ($this->PDOStatement === false) {
-            $errorInfo = $link->errorInfo();
-        } else {
-            $errorInfo = $this->PDOStatement->errorInfo();
-        }
-        if ($errorInfo[0] != '00000') {
-            throw new \PDOException($errorInfo[2] . ' #SQL:' . $this->fullSql, $errorInfo[1]);
-        }
     }
 }

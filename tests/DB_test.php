@@ -6,39 +6,7 @@
  * Time: 上午12:27
  */
 include __DIR__ . '/../vendor/autoload.php';
-/*// mysql配置
-    'mysql' => [
-        'host'            => 'mysql_server',
-        'user'            => 'root',
-        'password'        => 'mysql574@password',
-        'database'        => 'sim_test',
-        'charset'         => 'utf8mb4',
-        'port'            => '3306',
-        'connect_timeout' => 1,//连接超时  单位秒
-        //如果配置了数据库读写分离，可以在下面配置从库配置
-        'slave'           => [
-            [
-                'host'            => 'mysql_server',
-                'user'            => 'root',
-                'password'        => 'mysql574@password',
-                'database'        => 'sim_test',
-                'charset'         => 'utf8mb4',
-                'port'            => '3306',
-                'weight'          => 3,//数据库从库权重，越大使用的频率越大
-                'connect_timeout' => 1
-            ],
-            [
-                'host'            => 'mysql_server',
-                'user'            => 'root',
-                'password'        => 'mysql574@password',
-                'database'        => 'sim_test',
-                'charset'         => 'utf8mb4',
-                'port'            => '3306',
-                'weight'          => 5,//数据库从库权重，越大使用的频率越大
-                'connect_timeout' => 1
-            ]
-        ]
-    ],*/
+
 $config = include __DIR__ . '/config.php';
 
 /*DB测试*/
@@ -78,7 +46,7 @@ try {
 $res = \BaAGee\MySQL\DB::transaction('transactionTest', [$db]);
 var_dump('测试事务2 结果：' . ($res ? 'ok' : 'error'));
 
-function transactionTest($db)
+function transactionTest(\BaAGee\MySQL\DB $db)
 {
     $sql      = 'INSERT INTO article(id,user_id,title,content,tag,create_time) values 
 (null ,:user_id,:title,:content,:tag,:create_time)';
@@ -95,6 +63,10 @@ function transactionTest($db)
 
     return true;
 }
+
+var_dump($db->getLastPrepareSql());
+var_dump($db->getLastPrepareData());
+var_dump($db->getPDOStatement());
 
 echo 'OVER' . PHP_EOL;
 
