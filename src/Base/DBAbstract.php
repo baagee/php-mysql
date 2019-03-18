@@ -10,6 +10,7 @@ namespace BaAGee\MySQL\Base;
 
 use BaAGee\MySQL\Connection;
 use BaAGee\MySQL\DB;
+use BaAGee\MySQL\DBConfig;
 
 /**
  * Class DBAbstract
@@ -23,10 +24,6 @@ abstract class DBAbstract
      * @var array mysql配置
      */
     protected static $config = [];
-    /**
-     * @var bool 是否初始化
-     */
-    protected static $isInit = false;
 
     /**
      * @var array 保存数据库链接
@@ -37,96 +34,17 @@ abstract class DBAbstract
     ];
 
     /**
-     * 初始化配置
-     * @param array $config
-     * @throws \Exception
-     */
-    public static function init(array $config)
-    {
-        if (static::$isInit === false) {
-            static::$config = static::checkConfig($config);
-            static::$isInit = true;
-        }
-    }
-
-    /**
      * 获取DB
      * @return DB
      * @throws \Exception
      */
     public static function getInstance(): DB
     {
-        if (self::$isInit === false) {
-            $dbClass = DB::class;
-            throw new \Exception($dbClass . '没有初始化' . $dbClass . '::init');
-        }
         if (self::$_instance === null) {
             self::$_instance = new static();
+            self::$config    = DBConfig::get();
         }
         return self::$_instance;
-    }
-
-    private static function checkMySQLConfig($config, $slave = false)
-    {
-        $msg = 'DB';
-        if ($slave) {
-            $msg .= ' Slave';
-        }
-        if (empty($config['host'])) {
-            throw new \Exception($msg . '配置host不能为空');
-        }
-        if (empty($config['port'])) {
-            throw new \Exception($msg . '配置port不能为空');
-        }
-        if (empty($config['user'])) {
-            throw new \Exception($msg . '配置user不能为空');
-        }
-        if (empty($config['password'])) {
-            throw new \Exception($msg . '配置password不能为空');
-        }
-        if (empty($config['charset'])) {
-            $config['charset'] = 'utf8';
-        }
-        if (empty($config['connectTimeout'])) {
-            $config['connectTimeout'] = 1;//1秒
-        }
-        if (empty($config['database'])) {
-            throw new \Exception($msg . '配置database不能为空');
-        }
-        if ($slave) {
-            // 默认负载均衡1 每个slave平等
-            if (empty($config['weight'])) {
-                $config['weight'] = 1;
-            }
-        }
-        return $config;
-    }
-
-    /**
-     * 检查mysql配置文件
-     * @param array $config
-     * @param bool  $slave
-     * @return array
-     * @throws \Exception
-     */
-    private static function checkConfig(array $config, bool $slave = false)
-    {
-        if (empty($config)) {
-            throw new \Exception('DB配置不能为空');
-        }
-        if ($slave) {
-            foreach ($config as &$item) {
-                $item = self::checkMySQLConfig($item, true);
-            }
-        } else {
-            // 检查每一项
-            $config = self::checkMySQLConfig($config, false);
-            if (!empty($config['slave'])) {
-                // 配置了从库
-                $config['slave'] = self::checkConfig($config['slave'], true);
-            }
-        }
-        return $config;
     }
 
     /**

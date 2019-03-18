@@ -51,7 +51,7 @@ class ArticleModel extends BaseModel
 }
 
 /*DB初始化*/
-\BaAGee\MySQL\DB::init(include __DIR__ . '/config.php');
+\BaAGee\MySQL\DBConfig::init(include __DIR__ . '/config.php');
 
 $article = new ArticleModel();
 var_dump($article->getOne(490));

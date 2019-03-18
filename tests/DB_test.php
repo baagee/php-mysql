@@ -10,7 +10,7 @@ include __DIR__ . '/../vendor/autoload.php';
 $config = include __DIR__ . '/config.php';
 
 /*DB测试*/
-\BaAGee\MySQL\DB::init($config);
+\BaAGee\MySQL\DBConfig::init($config);
 
 $db  = \BaAGee\MySQL\DB::getInstance();
 $db1 = \BaAGee\MySQL\DB::getInstance();
