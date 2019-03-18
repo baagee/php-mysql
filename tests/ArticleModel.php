@@ -9,30 +9,35 @@
 include __DIR__ . '/../vendor/autoload.php';
 
 /**
+ * Class BaseModel
+ */
+abstract class BaseModel
+{
+    /**
+     * @var string
+     */
+    protected $table = '';
+
+    /**
+     * @var \BaAGee\MySQL\SimpleTable
+     */
+    protected $simpleTable = null;
+
+    public function __construct()
+    {
+        $this->simpleTable = \BaAGee\MySQL\SimpleTable::getInstance($this->table);
+    }
+}
+
+/**
  * Class ArticleModel
  */
-class ArticleModel
+class ArticleModel extends BaseModel
 {
-    use \BaAGee\MySQL\Base\SingletonTrait;
-
     /**
-     * @var \BaAGee\MySQL\SimpleTable 加上备注方便代码提示
+     * @var string
      */
-    protected $table = null;
-
-    /**
-     * @return ArticleModel
-     * @throws Exception
-     */
-    public static function getInstance(): ArticleModel
-    {
-        if (self::$_instance === null) {
-            $obj             = new self();
-            $obj->table      = \BaAGee\MySQL\SimpleTable::getInstance('article');
-            self::$_instance = $obj;
-        }
-        return self::$_instance;
-    }
+    protected $table = 'article';
 
     /**
      * 根据ID查询一条
@@ -41,13 +46,14 @@ class ArticleModel
      */
     public function getOne($id)
     {
-        return $this->table->setWhere('id=:id')->select(['id' => $id])[0];
+        return $this->simpleTable->setWhere('id=:id')->select(['id' => $id])[0];
     }
 }
 
 /*DB初始化*/
 \BaAGee\MySQL\DB::init(include __DIR__ . '/config.php');
 
-$article = ArticleModel::getInstance();
+$article = new ArticleModel();
 var_dump($article->getOne(490));
 
+echo 'OVER' . PHP_EOL;
