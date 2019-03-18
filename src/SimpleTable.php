@@ -32,7 +32,7 @@ final class SimpleTable extends SimpleTableAbstract implements SimpleTableInterf
         }
         $columns = implode(', ', $columns);
         $holder  = sprintf('(%s)', implode(',', $holder));
-        $sql     = sprintf('%s INTO `%s`(%s) VALUES %s', $replace ? 'REPLACE' : 'INSERT', $this->tableName, $columns, $holder);
+        $sql     = trim(sprintf('%s INTO `%s`(%s) VALUES %s', $replace ? 'REPLACE' : 'INSERT', $this->tableName, $columns, $holder));
         $res     = $this->db->execute($sql, $data);
         $this->clear();
         if ($res == 1) {
@@ -62,7 +62,7 @@ final class SimpleTable extends SimpleTableAbstract implements SimpleTableInterf
      */
     final public function update(array $data = [])
     {
-        $sql = sprintf('UPDATE `%s` SET %s %s', $this->tableName, $this->updateFields, $this->where);
+        $sql = trim(sprintf('UPDATE `%s` SET %s %s', $this->tableName, $this->updateFields, $this->where));
         $res = $this->db->execute($sql, $data);
         $this->clear();
         return $res;

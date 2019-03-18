@@ -141,11 +141,7 @@ abstract class SimpleTableAbstract
      */
     final public function setLimitOffset(int $limit, int $offset = 0)
     {
-        if ($offset == 0) {
-            $this->limitOffset = 'LIMIT ' . $limit;
-        } else {
-            $this->limitOffset = sprintf('LIMIT %d, %d', $offset, $limit);
-        }
+        $this->limitOffset = sprintf('LIMIT %d, %d', $offset, $limit);
         return $this;
     }
 

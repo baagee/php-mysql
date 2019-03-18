@@ -10,7 +10,7 @@ include __DIR__ . '/../vendor/autoload.php';
 $config = include __DIR__ . '/config.php';
 
 /*DB测试*/
-\BaAGee\MySQL\DB::init($config);
+\BaAGee\MySQL\DBConfig::init($config);
 
 $article = \BaAGee\MySQL\SimpleTable::getInstance('article');
 // 插入
@@ -26,8 +26,9 @@ $res = $article->setWhere('id=:id')->setUpdateFields('content=:content')->update
 var_dump('update res=' . $res);
 
 // 查询数据
-$res = $article->setWhere('id>:id')->setOrderBy('id desc')->setLimitOffset(0, 10)->select(['id' => 500]);
-var_dump('select res=', $res);
+$res = $article->setWhere('id>:id')->setOrderBy('id desc')->setLimitOffset(10)->select(['id' => 500]);
+// var_dump('select res=', $res);
+var_dump($article->getDb()->getLastSql());
 
 $student = \BaAGee\MySQL\SimpleTable::getInstance('student_score');
 $res     = $student->setSelectFields('id,student_name,age,sex')->setOrderBy('history desc')->setGroupBy('english')->setWhere('chinese>:chinese or english<:english')->setLimitOffset(0, 10)->setHaving('sex=:sex')->setLock('for update')->select(['chinese' => 69, 'english' => 60, 'sex' => 1]);
