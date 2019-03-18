@@ -16,7 +16,7 @@ trait SingletonTrait
     /**
      * @var null 类实例
      */
-    protected static $_instance = null;
+    private static $_instance = null;
 
     /**
      * 禁止new
