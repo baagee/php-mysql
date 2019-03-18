@@ -8,13 +8,14 @@
 
 namespace BaAGee\MySQL;
 
+use BaAGee\MySQL\Base\SimpleTableInterface;
 use BaAGee\MySQL\Base\SingletonTrait;
 
 /**
  * Class SimpleTable
  * @package BaAGee\MySQL
  */
-final class SimpleTable
+final class SimpleTable implements SimpleTableInterface
 {
     use SingletonTrait;
 
@@ -185,7 +186,7 @@ final class SimpleTable
      * @param bool  $replace
      * @return int|null
      */
-    final public function insert(array $data, $replace = false)
+    final public function insert(array $data, bool $replace = false)
     {
         $columns = $holder = [];
         foreach ($data as $column => $value) {
