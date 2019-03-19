@@ -207,14 +207,10 @@ final class DB extends DBAbstract implements DBInterface
                     $field = ':' . $field;
                 }
                 $type = gettype($value);
-                switch ($type) {
-                    case 'integer':
-                    case 'double':
-                        $fullSql = str_replace($field, $value, $fullSql);
-                        break;
-                    default:
-                        $fullSql = str_replace($field, '\'' . $value . '\'', $fullSql);
+                if (!in_array($type, ['integer', 'double'])) {
+                    $value = '\'' . $value . '\'';
                 }
+                $fullSql = str_replace($field, $value, $fullSql);
             }
         }
         return $fullSql;
