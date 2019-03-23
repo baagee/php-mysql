@@ -46,7 +46,7 @@ class ArticleModel extends BaseModel
      */
     public function getOne($id)
     {
-        return $this->simpleTable->setWhere('id=:id')->select(['id' => $id])[0];
+        return $this->simpleTable->where('id=:id')->select(['id' => $id])[0];
     }
 }
 

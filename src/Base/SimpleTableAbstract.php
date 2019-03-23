@@ -73,7 +73,7 @@ abstract class SimpleTableAbstract
      * @param string $updateFields
      * @return $this
      */
-    final public function setUpdateFields(string $updateFields)
+    final public function updateFields(string $updateFields)
     {
         $this->updateFields = $updateFields;
         return $this;
@@ -84,7 +84,7 @@ abstract class SimpleTableAbstract
      * @param string $selectFields
      * @return $this
      */
-    final public function setSelectFields(string $selectFields)
+    final public function selectFields(string $selectFields)
     {
         $this->selectFields = $selectFields;
         return $this;
@@ -95,7 +95,7 @@ abstract class SimpleTableAbstract
      * @param string $having
      * @return $this
      */
-    final public function setHaving(string $having)
+    final public function having(string $having)
     {
         $this->having = 'HAVING ' . $having;
         return $this;
@@ -106,7 +106,7 @@ abstract class SimpleTableAbstract
      * @param string $orderBy
      * @return $this
      */
-    final public function setOrderBy(string $orderBy)
+    final public function orderBy(string $orderBy)
     {
         $this->orderBy = 'ORDER BY ' . $orderBy;
         return $this;
@@ -117,7 +117,7 @@ abstract class SimpleTableAbstract
      * @param string $groupBy
      * @return $this
      */
-    final public function setGroupBy(string $groupBy)
+    final public function groupBy(string $groupBy)
     {
         $this->groupBy = 'GROUP BY ' . $groupBy;
         return $this;
@@ -128,7 +128,7 @@ abstract class SimpleTableAbstract
      * @param string $where
      * @return $this
      */
-    final public function setWhere(string $where)
+    final public function where(string $where)
     {
         $this->where = 'WHERE ' . $where;
         return $this;
@@ -139,7 +139,7 @@ abstract class SimpleTableAbstract
      * @param int $limit
      * @return $this
      */
-    final public function setLimitOffset(int $limit, int $offset = 0)
+    final public function limitOffset(int $limit, int $offset = 0)
     {
         $this->limitOffset = sprintf('LIMIT %d, %d', $offset, $limit);
         return $this;
@@ -151,7 +151,7 @@ abstract class SimpleTableAbstract
      * @param string $lock
      * @return $this
      */
-    final public function setLock(string $lock)
+    final public function lock(string $lock)
     {
         $this->lock = $lock;
         return $this;

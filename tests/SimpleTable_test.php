@@ -18,23 +18,23 @@ $res = $article->insert(createArticleRow(), true);
 var_dump('last insert id=' . $res);
 
 // 删除数组
-$res = $article->setWhere('id=:id')->delete(['id' => 500]);
+$res = $article->where('id=:id')->delete(['id' => 500]);
 var_dump('delete res=' . $res);
 
 //更新数据
-$res = $article->setWhere('id=:id')->setUpdateFields('content=:content')->update(['content' => 'content', 'id' => 490]);
+$res = $article->where('id=:id')->updateFields('content=:content')->update(['content' => 'content', 'id' => 490]);
 var_dump('update res=' . $res);
 
 // 查询数据
-$res = $article->setWhere('id>:id')->setOrderBy('id desc')->setLimitOffset(10)->select(['id' => 500]);
+$res = $article->where('id>:id')->orderBy('id desc')->limitOffset(10)->select(['id' => 500]);
 // var_dump('select res=', $res);
 var_dump($article->getDb()->getLastSql());
 
 $student = \BaAGee\MySQL\SimpleTable::getInstance('student_score');
-$res     = $student->setSelectFields('id,student_name,age,sex')->setOrderBy('history desc')->setGroupBy('english')->setWhere('chinese>:chinese or english<:english')->setLimitOffset(0, 10)->setHaving('sex=:sex')->setLock('for update')->select(['chinese' => 69, 'english' => 60, 'sex' => 1]);
+$res     = $student->selectFields('id,student_name,age,sex')->orderBy('history desc')->groupBy('english')->where('chinese>:chinese or english<:english')->limitOffset(0, 10)->having('sex=:sex')->lock('for update')->select(['chinese' => 69, 'english' => 60, 'sex' => 1]);
 // var_dump($res);
 
-var_dump($student->setSelectFields('count(id) as c')->select());
+var_dump($student->selectFields('count(id) as c')->select());
 $db = $article->getDb();
 var_dump($db);
 echo 'OVER' . PHP_EOL;
