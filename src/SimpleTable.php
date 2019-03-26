@@ -22,6 +22,7 @@ final class SimpleTable extends SimpleTableAbstract implements SimpleTableInterf
      * @param array $data
      * @param bool  $replace
      * @return int|null
+     * @throws \Exception
      */
     final public function insert(array $data, bool $replace = false)
     {
@@ -46,6 +47,7 @@ final class SimpleTable extends SimpleTableAbstract implements SimpleTableInterf
      * 删除数据
      * @param array $data
      * @return int
+     * @throws \Exception
      */
     final public function delete(array $data = [])
     {
@@ -59,6 +61,7 @@ final class SimpleTable extends SimpleTableAbstract implements SimpleTableInterf
      * 更新数据
      * @param array $data
      * @return int
+     * @throws \Exception
      */
     final public function update(array $data = [])
     {
@@ -71,6 +74,7 @@ final class SimpleTable extends SimpleTableAbstract implements SimpleTableInterf
     /**
      * @param array $data
      * @return array
+     * @throws \Exception
      */
     final public function select(array $data = [])
     {

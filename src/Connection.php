@@ -52,7 +52,6 @@ final class Connection
      */
     private static function getPdoObject(array $config)
     {
-        $dsn = sprintf('mysql:dbname=%s;host=%s;port=%d', $config['database'], $config['host'], $config['port']);
         if (isset($config['connect_timeout'])) {
             $connect_timeout = intval($config['connect_timeout']) == 0 ? 2 : intval($config['connect_timeout']);
         } else {
@@ -63,6 +62,7 @@ final class Connection
             \PDO::MYSQL_ATTR_INIT_COMMAND     => "SET NAMES '" . $config['charset'] . "';",// 设置客户端连接字符集
             \PDO::ATTR_TIMEOUT                => $connect_timeout// 设置超时
         ];
+        $dsn = sprintf('mysql:dbname=%s;host=%s;port=%d', $config['database'], $config['host'], $config['port']);
         $pdo     = new \PDO($dsn, $config['user'], $config['password'], $options);
         $pdo->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false); //禁用模拟预处理
         return $pdo;

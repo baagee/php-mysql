@@ -63,6 +63,7 @@ final class DB extends DBAbstract implements DBInterface
      * @param string $sql  要查询的sql
      * @param array  $data 查询条件
      * @return array
+     * @throws \Exception
      */
     final public function query(string $sql, array $data = [])
     {
@@ -98,6 +99,7 @@ final class DB extends DBAbstract implements DBInterface
      * @param string $sql  sql语句
      * @param array  $data 查询条件
      * @return int 影响行数
+     * @throws \Exception
      */
     final public function execute(string $sql, array $data = [])
     {
@@ -108,6 +110,7 @@ final class DB extends DBAbstract implements DBInterface
     /**
      * 获取最后一次插入的ID
      * @return int
+     * @throws \Exception
      */
     final public function getLastInsertId()
     {
@@ -117,6 +120,7 @@ final class DB extends DBAbstract implements DBInterface
     /**
      * 开启事务
      * @return bool
+     * @throws \Exception
      */
     final public function beginTransaction()
     {
@@ -134,6 +138,7 @@ final class DB extends DBAbstract implements DBInterface
     /**
      * 提交事务
      * @return bool
+     * @throws \Exception
      */
     final public function commit()
     {
@@ -149,6 +154,7 @@ final class DB extends DBAbstract implements DBInterface
     /**
      * 事务回滚
      * @return bool
+     * @throws \Exception
      */
     final public function rollback()
     {
