@@ -28,7 +28,9 @@ final class Connection
      */
     final private static function getDBConfig()
     {
-        self::$config = DBConfig::get();
+        if (empty(self::$config)) {
+            self::$config = DBConfig::get();
+        }
     }
 
     /**
