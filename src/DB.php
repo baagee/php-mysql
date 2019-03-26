@@ -43,14 +43,6 @@ final class DB extends DBAbstract implements DBInterface
     private $fullSql = '';
 
     /**
-     * @return \PDOStatement
-     */
-    final public function getPDOStatement(): \PDOStatement
-    {
-        return $this->PDOStatement;
-    }
-
-    /**
      * @return string
      */
     final public function getLastPrepareSql(): string
@@ -65,7 +57,6 @@ final class DB extends DBAbstract implements DBInterface
     {
         return $this->lastPrepareData;
     }
-
 
     /**
      * 查询sql
