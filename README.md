@@ -70,7 +70,6 @@ function transactionTest(\BaAGee\MySQL\DB $db)
 
 var_dump($db->getLastPrepareSql());
 var_dump($db->getLastPrepareData());
-var_dump($db->getPDOStatement());
 
 echo 'OVER' . PHP_EOL;
 ```
