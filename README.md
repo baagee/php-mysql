@@ -5,7 +5,7 @@ php mysql library
 单例模式封装了PDO，使用预处理防止SQL注入
 
 ## 安装
-`composer install baagee/php-mysql`
+`composer require baagee/php-mysql`
 
 ## 简单示例：
 ### 直接执行SQL语句 
