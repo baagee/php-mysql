@@ -37,6 +37,14 @@ $res     = $student->selectFields('id,student_name,age,sex')->orderBy('history d
 var_dump($student->selectFields('count(id) as c')->select());
 $db = $article->getDb();
 var_dump($db);
+
+// 当一次查询数据量大时可以使用yield 返回生成器
+$list = $student->yield()->where('id>:id')->select(['id' => 0]);
+var_dump($list);
+foreach ($list as $ie) {
+    var_dump($ie);
+}
+var_dump($student->getDb()->getLastSql());
 echo 'OVER' . PHP_EOL;
 
 

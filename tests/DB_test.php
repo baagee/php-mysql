@@ -31,6 +31,14 @@ $list = $db->query('select * from student_score where id >? order by id desc lim
 var_dump($list);
 var_dump($db->getLastSql());
 
+// 当一次查询数据量大时可以使用yield 返回生成器
+$list = $db->yieldQuery('select * from student_score where id>:id', ['id' => 0]);
+var_dump($list);
+foreach ($list as $i => $item) {
+    var_dump($item);
+}
+var_dump($db->getLastSql());
+
 /*测试事务1*/
 $db->beginTransaction();
 try {

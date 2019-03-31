@@ -69,6 +69,22 @@ abstract class SimpleTableAbstract
     protected $updateFields = '';
 
     /**
+     * @var bool select是否返回迭代器对象
+     */
+    protected $selectYield = false;
+
+    /**
+     * 是否返回迭代器对象
+     * @param bool $selectYield
+     * @return $this
+     */
+    final public function yield(bool $selectYield = true)
+    {
+        $this->selectYield = $selectYield;
+        return $this;
+    }
+
+    /**
      * 设置更新的字段 eg: name=:name, age=:age
      * @param string $updateFields
      * @return $this

@@ -81,7 +81,11 @@ final class SimpleTable extends SimpleTableAbstract implements SimpleTableInterf
         $sql = trim(sprintf('SELECT %s FROM `%s` %s %s %s %s %s %s',
             !empty($this->selectFields) ? $this->selectFields : '*', $this->tableName, $this->where, $this->groupBy,
             $this->having, $this->orderBy, $this->limitOffset, $this->lock));
-        $res = $this->db->query($sql, $data);
+        if ($this->selectYield) {
+            $res = $this->db->yieldQuery($sql, $data);
+        } else {
+            $res = $this->db->query($sql, $data);
+        }
         $this->clear();
         return $res;
     }

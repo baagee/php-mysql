@@ -35,6 +35,14 @@ $list = $db->query('select * from student_score where id >? order by id desc lim
 var_dump($list);
 var_dump($db->getLastSql());
 
+// 当一次查询数据量大时可以使用yield 返回生成器
+$list = $db->yieldQuery('select * from student_score where id>:id', ['id' => 0]);
+var_dump($list);
+foreach ($list as $i => $item) {
+    var_dump($item);
+}
+var_dump($db->getLastSql());
+
 /*测试事务1*/
 $db->beginTransaction();
 try {
@@ -108,6 +116,14 @@ $res     = $student->selectFields('id,student_name,age,sex')->orderBy('history d
 var_dump($student->selectFields('count(id) as c')->select());
 $db = $article->getDb();
 var_dump($db);
+
+// 查询数据量多时可以使用yield查询，返回生成器对象
+$list = $student->yield()->where('id>:id')->select(['id' => 0]);
+var_dump($list);
+foreach ($list as $ie) {
+    var_dump($ie);
+}
+var_dump($student->getDb()->getLastSql());
 echo 'OVER' . PHP_EOL;
 ```
 
