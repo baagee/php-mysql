@@ -44,6 +44,42 @@ final class SimpleTable extends SimpleTableAbstract implements SimpleTableInterf
     }
 
     /**
+     * 批量插入
+     * @param array $rows
+     * @param bool  $replace
+     * @return int|null
+     * @throws \Exception
+     */
+    final public function batchInsert(array $rows, bool $replace = false)
+    {
+        $sql         = ($replace ? 'REPLACE' : 'INSERT') . ' INTO `' . $this->tableName . '` (';
+        $fields      = [];
+        $zz          = '';
+        $prepareData = [];
+        foreach ($rows as $i => $item_array) {
+            $z = '(';
+            foreach ($item_array as $k => $v) {
+                if (!in_array($k, $fields)) {
+                    $fields[] = $k;
+                }
+                $z                                .= ':' . $k . '_' . $i . ', ';
+                $prepareData[':' . $k . '_' . $i] = $v;
+            }
+            $zz .= rtrim($z, ', ') . '),';
+        }
+        $fields = '`' . implode('`, `', $fields) . '`';
+        $sql    .= $fields;
+        $sql    = rtrim($sql, ', ') . ') VALUES ' . rtrim($zz, ',');
+        $res    = $this->db->execute($sql, $prepareData);
+        $this->clear();
+        if ($res > 0) {
+            return $res;
+        } else {
+            return null;
+        }
+    }
+
+    /**
      * 删除数据
      * @param array $data
      * @return int

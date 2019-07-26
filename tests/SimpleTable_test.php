@@ -34,17 +34,14 @@ $student = \BaAGee\MySQL\SimpleTable::getInstance('student_score');
 $res     = $student->selectFields('id,student_name,age,sex')->orderBy('history desc')->groupBy('english')->where('chinese>:chinese or english<:english')->limitOffset(0, 10)->having('sex=:sex')->lock('for update')->select(['chinese' => 69, 'english' => 60, 'sex' => 1]);
 // var_dump($res);
 
-var_dump($student->selectFields('count(id) as c')->select());
-$db = $article->getDb();
-var_dump($db);
-
-// 当一次查询数据量大时可以使用yield 返回生成器
-$list = $student->yield()->where('id>:id')->select(['id' => 0]);
-var_dump($list);
-foreach ($list as $ie) {
-    var_dump($ie);
+$rows = [];
+for ($i = 0; $i < 3; $i++) {
+    $rows[] = createArticleRow();
 }
-var_dump($student->getDb()->getLastSql());
+// 批量插入
+$res = $article->batchInsert($rows, true);
+var_dump($res);
+
 echo 'OVER' . PHP_EOL;
 
 
