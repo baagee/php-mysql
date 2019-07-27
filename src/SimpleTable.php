@@ -8,15 +8,40 @@
 
 namespace BaAGee\MySQL;
 
-use BaAGee\MySQL\Base\SimpleTableAbstract;
 use BaAGee\MySQL\Base\SimpleTableInterface;
+use BaAGee\MySQL\Base\SingletonTrait;
 
 /**
  * Class SimpleTable
  * @package BaAGee\MySQL
  */
-final class SimpleTable extends SimpleTableAbstract implements SimpleTableInterface
+final class SimpleTable extends SqlBuilder implements SimpleTableInterface
 {
+    use SingletonTrait;
+
+    /**
+     * @var DB
+     */
+    protected $db = null;
+
+    /**
+     * 获取操作一个表的简单Table类
+     * @param $tableName
+     * @return $this
+     * @throws \Exception
+     */
+    final public static function getInstance($tableName)
+    {
+        $tableName = trim($tableName);
+        if (empty(self::$_instance[$tableName])) {
+            $obj                         = new static();
+            $obj->tableName              = $tableName;
+            $obj->db                     = DB::getInstance();
+            self::$_instance[$tableName] = $obj;
+        }
+        return self::$_instance[$tableName];
+    }
+
     /**
      * 插入数据insert into 或者replace into 返回插入的ID
      * @param array $data
@@ -26,16 +51,10 @@ final class SimpleTable extends SimpleTableAbstract implements SimpleTableInterf
      */
     final public function insert(array $data, bool $replace = false)
     {
-        $columns = $holder = [];
-        foreach ($data as $column => $value) {
-            $columns[] = sprintf('`%s`', $column);
-            $holder[]  = ':' . $column;
-        }
-        $columns = implode(', ', $columns);
-        $holder  = sprintf('(%s)', implode(',', $holder));
-        $sql     = trim(sprintf('%s INTO `%s`(%s) VALUES %s', $replace ? 'REPLACE' : 'INSERT', $this->tableName, $columns, $holder));
-        $res     = $this->db->execute($sql, $data);
+        $res = $this->buildInsert($data, $replace);
+        $res = $this->db->execute($res['sql'], $res['data']);
         $this->clear();
+        var_dump($this);
         if ($res == 1) {
             return $this->db->getLastInsertId();
         } else {
@@ -52,25 +71,8 @@ final class SimpleTable extends SimpleTableAbstract implements SimpleTableInterf
      */
     final public function batchInsert(array $rows, bool $replace = false)
     {
-        $sql         = ($replace ? 'REPLACE' : 'INSERT') . ' INTO `' . $this->tableName . '` (';
-        $fields      = [];
-        $zz          = '';
-        $prepareData = [];
-        foreach ($rows as $i => $item_array) {
-            $z = '(';
-            foreach ($item_array as $k => $v) {
-                if (!in_array($k, $fields)) {
-                    $fields[] = $k;
-                }
-                $z                                .= ':' . $k . '_' . $i . ', ';
-                $prepareData[':' . $k . '_' . $i] = $v;
-            }
-            $zz .= rtrim($z, ', ') . '),';
-        }
-        $fields = '`' . implode('`, `', $fields) . '`';
-        $sql    .= $fields;
-        $sql    = rtrim($sql, ', ') . ') VALUES ' . rtrim($zz, ',');
-        $res    = $this->db->execute($sql, $prepareData);
+        $res = $this->buildBatchInsert($rows, $replace);
+        $res = $this->db->execute($res['sql'], $res['data']);
         $this->clear();
         if ($res > 0) {
             return $res;
@@ -85,10 +87,10 @@ final class SimpleTable extends SimpleTableAbstract implements SimpleTableInterf
      * @return int
      * @throws \Exception
      */
-    final public function delete(array $data = [])
+    final public function delete()
     {
-        $sql = trim(sprintf('DELETE FROM `%s` %s', $this->tableName, $this->where));
-        $res = $this->db->execute($sql, $data);
+        $res = $this->buildDelete();
+        $res = $this->db->execute($res['sql'], $res['data']);
         $this->clear();
         return $res;
     }
@@ -101,26 +103,26 @@ final class SimpleTable extends SimpleTableAbstract implements SimpleTableInterf
      */
     final public function update(array $data = [])
     {
-        $sql = trim(sprintf('UPDATE `%s` SET %s %s', $this->tableName, $this->updateFields, $this->where));
-        $res = $this->db->execute($sql, $data);
+        $res = $this->buildUpdate($data);
+        $res = $this->db->execute($res['sql'], $res['data']);
         $this->clear();
         return $res;
     }
 
     /**
-     * @param array $data
-     * @return array
+     * @param bool $generator
+     * @return array|\Generator
      * @throws \Exception
      */
-    final public function select(array $data = [])
+    final public function select($generator = false)
     {
-        $sql = trim(sprintf('SELECT %s FROM `%s` %s %s %s %s %s %s',
-            !empty($this->selectFields) ? $this->selectFields : '*', $this->tableName, $this->where, $this->groupBy,
-            $this->having, $this->orderBy, $this->limitOffset, $this->lock));
-        if ($this->selectYield) {
-            $res = $this->db->yieldQuery($sql, $data);
+        $res = $this->buildSelect();
+        var_dump($res);
+        die;
+        if ($generator) {
+            $res = $this->db->yieldQuery($res['sql'], $res['data']);
         } else {
-            $res = $this->db->query($sql, $data);
+            $res = $this->db->query($res['sql'], $res['data']);
         }
         $this->clear();
         return $res;
