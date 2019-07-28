@@ -86,45 +86,85 @@ echo 'OVER' . PHP_EOL;
 ```php
 include __DIR__ . '/../vendor/autoload.php';
 
+use  BaAGee\MySQL\SimpleTable;
+
 $config = include __DIR__ . '/config.php';
 
-/*配置初始化*/
+/*DB测试*/
 \BaAGee\MySQL\DBConfig::init($config);
-// 传入表名
-$article = \BaAGee\MySQL\SimpleTable::getInstance('article');
-// 插入
-$res = $article->insert(createArticleRow(), true);
-var_dump('last insert id=' . $res);
 
-// 删除数组
-$res = $article->where('id=:id')->delete(['id' => 500]);
-var_dump('delete res=' . $res);
 
-//更新数据
-$res = $article->where('id=:id')->updateFields('content=:content')->update(['content' => 'content', 'id' => 490]);
-var_dump('update res=' . $res);
+$builder = SimpleTable::getInstance('student_score');
 
-// 查询数据
-$res = $article->where('id>:id')->orderBy('id desc')->limitOffset(10)->select(['id' => 500]);
-// var_dump('select res=', $res);
-var_dump($article->getDb()->getLastSql());
+/*插入测试*/
+$res = $builder->insert(createStudentScoreRow(), true);
+var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
+var_dump($res);
 
-$student = \BaAGee\MySQL\SimpleTable::getInstance('student_score');
-$res     = $student->selectFields('id,student_name,age,sex')->orderBy('history desc')->groupBy('english')->where('chinese>:chinese or english<:english')->limitOffset(0, 10)->having('sex=:sex')->lock('for update')->select(['chinese' => 69, 'english' => 60, 'sex' => 1]);
+/*批量插入测试*/
+$rows = [];
+for ($i = 0; $i < 3; $i++) {
+    $rows[] = createStudentScoreRow();
+}
+$res = $builder->batchInsert($rows, true);
+var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
+var_dump($res);
+
+/*查询测试*/
+$res = $builder->fields([
+    'student_name', 'student_id', 'chinese', 'english', 'math', 'biology', 'history', 'class_id', 'age', 'sex'
+])->where([
+    'history'  => ['>', '60', 'or'],
+    'class_id' => ['in', [1, 2, 3, 4]]
+])->where([
+    'age' => ['=', 18]
+])->orderBy(['id' => 'desc'])->limit(0, 2)->groupBy('student_name')->lockInShareMode()->select(false);
+var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
 // var_dump($res);
 
-var_dump($student->selectFields('count(id) as c')->select());
-$db = $article->getDb();
-var_dump($db);
+$res = $builder->fields([
+    'avg(chinese)', 'class_id', 'min(`age`)', 'max(math)', 'sum(biology)', 'count(student_id)'
+])->where(['id' => ['>', mt_rand(300, 590)]])->groupBy('class_id')->orderBy(['class_id' => 'desc'])->limit(0, 7)->select();
+var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
+// var_dump($res);
 
-// 查询数据量多时可以使用yield查询，返回生成器对象
-$list = $student->yield()->where('id>:id')->select(['id' => 0]);
-var_dump($list);
-foreach ($list as $ie) {
-    var_dump($ie);
-}
-var_dump($student->getDb()->getLastSql());
-echo 'OVER' . PHP_EOL;
+$res = $builder->fields([
+    'student_name', 'math', 'english', 'class_id as cid'
+])->where([
+    'class_id' => ['between', [1, 5]],
+    'sex'      => ['=', 1],
+])->orWhere([
+    'math'    => ['>', 60, 'or'],
+    'english' => ['<', 60]
+])->having(['`cid`' => ['>', 3]])->orHaving([
+    'cid' => ['<', 2]
+])->limit(0, 2)->orderBy(['age' => 'desc', 'student_id' => 'asc'])
+    ->groupBy('student_id')->groupBy('math')->lockInShareMode()->select();
+var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
+// var_dump($res);
+// die;
+
+/*更新测试*/
+$res = $builder->where(['id' => ['=', mt_rand(300, 590)]])->decrement('math', 1);
+var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
+var_dump($res);
+$res = $builder->where(['id' => ['=', mt_rand(300, 590)]])->increment('math', 1);
+var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
+var_dump($res);
+
+$res = $builder->where(['id' => ['=', mt_rand(300, 590)]])->update(['student_name' => '哈哈哈' . mt_rand(0, 99)]);
+var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
+var_dump($res);
+
+/*删除测试*/
+$res = $builder->where(['id' => ['=', mt_rand(300, 590)]])->delete();
+var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
+var_dump($res);
+
+$article = SimpleTable::getInstance('article');
+$res     = $article->insert(createArticleRow());
+var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
+var_dump($res);
 ```
 
 ### 稍微封装成Model
@@ -163,13 +203,15 @@ class ArticleModel extends BaseModel
     protected $table = 'article';
 
     /**
-     * 根据ID查询一条
      * @param $id
-     * @return mixed
+     * @return array|Generator
+     * @throws Exception
      */
     public function getOne($id)
     {
-        return $this->simpleTable->where('id=:id')->select(['id' => $id])[0];
+        return $this->simpleTable->where([
+                'id' => ['=', $id]
+            ])->select()[0] ?? [];
     }
 }
 
