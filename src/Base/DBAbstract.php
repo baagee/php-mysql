@@ -42,4 +42,14 @@ abstract class DBAbstract
     {
         return Connection::getInstance($is_read);
     }
+
+    /**
+     * 关闭连接
+     * @param bool $isRead
+     * @return bool
+     */
+    protected static function close(bool $isRead)
+    {
+        return Connection::close($isRead);
+    }
 }

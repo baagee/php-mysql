@@ -104,6 +104,21 @@ final class Connection
     }
 
     /**
+     * 关闭连接
+     * @param bool $isRead
+     * @return bool
+     */
+    final public static function close(bool $isRead)
+    {
+        if ($isRead) {
+            unset(self::$_instance['slave']);
+        } else {
+            unset(self::$_instance['master']);
+        }
+        return true;
+    }
+
+    /**
      * 获取数据库连接
      * @param bool $is_read
      * @return mixed|null|\PDO
