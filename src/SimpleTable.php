@@ -75,8 +75,12 @@ final class SimpleTable extends SqlBuilder implements SimpleTableInterface
             $obj->_tableSchema           = self::getTableSchema($tableName);
             $obj->_dbInstance            = DB::getInstance();
             self::$_instance[$tableName] = $obj;
+        } else {
+            $obj = self::$_instance[$tableName];
+            // 清空上次的缓存字段
+            $obj->_clear();
         }
-        return self::$_instance[$tableName];
+        return $obj;
     }
 
     /**

@@ -13,7 +13,7 @@ abstract class SqlBuilder
     protected const COLUMN_TYPE_INT    = 'int';
     protected const COLUMN_TYPE_FLOAT  = 'float';
     protected const COLUMN_TYPE_STRING = 'string';
-    
+
     /**
      * 表名
      * @var string
@@ -303,7 +303,8 @@ abstract class SqlBuilder
 
     /**
      * 添加数据
-     * @param array $data 数据
+     * @param array $data
+     * @param bool  $replace
      * @return array
      */
     final protected function _buildInsert(array $data, bool $replace = false)
