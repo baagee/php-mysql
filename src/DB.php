@@ -67,7 +67,7 @@ final class DB extends DBAbstract implements DBInterface
      */
     final public function query(string $sql, array $data = [])
     {
-        $this->runSql(self::getConnection(!$this->inTransaction), $sql, $data);
+        $this->runSql(!$this->inTransaction, $sql, $data);
         return $this->PDOStatement->fetchAll(\PDO::FETCH_ASSOC);
     }
 
@@ -80,7 +80,7 @@ final class DB extends DBAbstract implements DBInterface
      */
     final public function yieldQuery($sql, array $data = [])
     {
-        $this->runSql(self::getConnection(!$this->inTransaction), $sql, $data);
+        $this->runSql(!$this->inTransaction, $sql, $data);
         while ($row = $this->PDOStatement->fetch(\PDO::FETCH_ASSOC)) {
             yield $row;
         }
@@ -88,25 +88,67 @@ final class DB extends DBAbstract implements DBInterface
 
     /**
      * 执行SQL
-     * @param \PDO   $connection
+     * @param bool   $isRead
      * @param string $sql
      * @param array  $data
+     * @param int    $retryTimes
+     * @throws \Exception
      */
-    private function runSql(\PDO $connection, string $sql, array $data = [])
+    private function runSql(bool $isRead, string $sql, array $data = [], $retryTimes = 0)
     {
+        $connection            = self::getConnection($isRead);
         $this->fullSql         = '';
         $this->lastPrepareSql  = $sql;
         $this->lastPrepareData = $data;
-        $this->PDOStatement    = $connection->prepare($this->lastPrepareSql);
-        if ($this->PDOStatement === false) {
-            $errorInfo = $connection->errorInfo();
-            throw new \PDOException($errorInfo[2] . ' #SQL:' . $this->getLastSql(), $errorInfo[1]);
+        try {
+            $this->PDOStatement = $connection->prepare($this->lastPrepareSql);
+            if ($this->PDOStatement === false) {
+                $errorInfo = $connection->errorInfo();
+                throw new \PDOException($errorInfo[2] . ' #SQL:' . $this->getLastSql(), $errorInfo[1]);
+            }
+            $this->PDOStatement->execute($this->lastPrepareData);
+            $errorInfo = $this->PDOStatement->errorInfo();
+            if ($errorInfo[0] != '00000') {
+                throw new \PDOException($errorInfo[2] . ' #SQL:' . $this->getLastSql(), $errorInfo[1]);
+            }
+        } catch (\Exception $e) {
+            // 重试三次
+            if ($this->isBreak($e) && $retryTimes < 3) {
+                self::close($isRead);
+                $retryTimes++;
+                $this->runSql($isRead, $sql, $data, $retryTimes);
+            }
+            throw $e;
         }
-        $this->PDOStatement->execute($this->lastPrepareData);
-        $errorInfo = $this->PDOStatement->errorInfo();
-        if ($errorInfo[0] != '00000') {
-            throw new \PDOException($errorInfo[2] . ' #SQL:' . $this->getLastSql(), $errorInfo[1]);
+    }
+
+    /**
+     * 判断是否断开连接
+     * @param \Exception $e
+     * @return bool
+     */
+    protected function isBreak(\Exception $e): bool
+    {
+        $breakMatchStr = [
+            'server has gone away',
+            'no connection to the server',
+            'Lost connection',
+            'is dead or not enabled',
+            'Error while sending',
+            'decryption failed or bad record mac',
+            'server closed the connection unexpectedly',
+            'SSL connection has been closed unexpectedly',
+            'Error writing data to the connection',
+            'Resource deadlock avoided',
+            'failed with errno',
+        ];
+        $error         = $e->getMessage();
+        foreach ($breakMatchStr as $msg) {
+            if (false !== stripos($error, $msg)) {
+                return true;
+            }
         }
+        return false;
     }
 
     /**
@@ -118,7 +160,7 @@ final class DB extends DBAbstract implements DBInterface
      */
     final public function execute(string $sql, array $data = [])
     {
-        $this->runSql(self::getConnection(false), $sql, $data);
+        $this->runSql(false, $sql, $data);
         return $this->PDOStatement->rowCount();
     }
 

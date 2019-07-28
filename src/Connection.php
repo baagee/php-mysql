@@ -48,9 +48,10 @@ final class Connection
 
     /**
      * @param array $config
-     * @return mixed
+     * @param int   $retryTimes
+     * @return \PDO
      */
-    private static function getPdoObject(array $config)
+    private static function getPdoObject(array $config, $retryTimes = 0)
     {
         if (isset($config['connect_timeout'])) {
             $connect_timeout = intval($config['connect_timeout']) == 0 ? 2 : intval($config['connect_timeout']);
@@ -58,14 +59,24 @@ final class Connection
             $connect_timeout = 2;
         }
         $options = [
-            \PDO::MYSQL_ATTR_MULTI_STATEMENTS => false,//禁止多语句查询
-            \PDO::MYSQL_ATTR_INIT_COMMAND     => "SET NAMES '" . $config['charset'] . "';",// 设置客户端连接字符集
-            \PDO::ATTR_TIMEOUT                => $connect_timeout// 设置超时
-        ];
-        $dsn = sprintf('mysql:dbname=%s;host=%s;port=%d', $config['database'], $config['host'], $config['port']);
-        $pdo     = new \PDO($dsn, $config['user'], $config['password'], $options);
-        $pdo->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false); //禁用模拟预处理
-        return $pdo;
+                \PDO::MYSQL_ATTR_MULTI_STATEMENTS => false,//禁止多语句查询
+                \PDO::MYSQL_ATTR_INIT_COMMAND     => "SET NAMES '" . $config['charset'] . "';",// 设置客户端连接字符集
+                \PDO::ATTR_TIMEOUT                => $connect_timeout,// 设置超时
+                \PDO::ATTR_ERRMODE                => \PDO::ERRMODE_EXCEPTION,
+                \PDO::ATTR_EMULATE_PREPARES       => false, //禁用模拟预处理
+            ] + ($config['options'] ?? []);
+        $dsn     = sprintf('mysql:dbname=%s;host=%s;port=%d', $config['database'], $config['host'], $config['port']);
+        try {
+            $pdo = new \PDO($dsn, $config['user'], $config['password'], $options);
+            return $pdo;
+        } catch (\PDOException $e) {
+            if ($retryTimes < $config['retryTimes'] ?? 0) {
+                $retryTimes++;
+                return self::getPdoObject($config, $retryTimes);
+            } else {
+                throw $e;
+            }
+        }
     }
 
     /**
@@ -90,6 +101,21 @@ final class Connection
             }
         }
         return $res;
+    }
+
+    /**
+     * 关闭连接
+     * @param bool $isRead
+     * @return bool
+     */
+    final public static function close(bool $isRead)
+    {
+        if ($isRead) {
+            unset(self::$_instance['slave']);
+        } else {
+            unset(self::$_instance['master']);
+        }
+        return true;
     }
 
     /**
