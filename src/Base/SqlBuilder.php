@@ -6,7 +6,7 @@
  * Time: 20:34
  */
 
-namespace BaAGee\MySQL;
+namespace BaAGee\MySQL\Base;
 
 abstract class SqlBuilder
 {
@@ -20,7 +20,7 @@ abstract class SqlBuilder
      * @var array|mixed
      *
      */
-    private $__tableSchema = [];
+    protected $_tableSchema = [];
 
     /**
      * 最后一次预处理sql语句
@@ -136,7 +136,7 @@ abstract class SqlBuilder
      * @param bool $is_having
      * @return static
      */
-    private function whereOrHaving(array $conditions, $is_and = true, $is_having = false)
+    private function whereOrHaving(array $conditions, bool $is_and = true, bool $is_having = false)
     {
         if (empty($conditions)) {
             return $this;
@@ -176,15 +176,16 @@ abstract class SqlBuilder
     final public function fields(array $fields)
     {
         foreach ($fields as $field) {
+            $field = trim($field);
             if ($field === '*') {
                 $this->__fields = ' *';
                 break;
             }
-            // if (in_array($field, array_keys($this->__tableSchema['columns']))) {
-            //     $this->__fields .= ', `' . trim($field, '`') . '`';
-            // }
-
-            $this->__fields .= ', ' . trim($field) . '';
+            if (in_array($field, array_keys($this->_tableSchema['columns']))) {
+                $this->__fields .= ', `' . trim($field, '`') . '`';
+            } else {
+                $this->__fields .= ', ' . trim($field) . '';
+            }
         }
         $this->__fields = trim($this->__fields, ',');
         return $this;
@@ -306,15 +307,11 @@ abstract class SqlBuilder
         $fields                  = $placeholder = '';
         $this->__lastPrepareData = [];
         foreach ($data as $k => $v) {
-            // if (in_array($k, array_keys($this->__tableSchema['columns']))) {
-            //     $fields                            .= '`' . $k . '`, ';
-            //     $placeholder                       .= ':' . $k . ', ';
-            //     $this->__lastPrepareData[':' . $k] = $v;
-            // }
-
-            $fields                            .= $k . ', ';
-            $placeholder                       .= ':' . $k . ', ';
-            $this->__lastPrepareData[':' . $k] = $v;
+            if (in_array($k, array_keys($this->_tableSchema['columns']))) {
+                $fields                            .= '`' . $k . '`, ';
+                $placeholder                       .= ':' . $k . ', ';
+                $this->__lastPrepareData[':' . $k] = $v;
+            }
         }
         $fields                 = rtrim($fields, ', ');
         $placeholder            = rtrim($placeholder, ', ');
@@ -340,19 +337,13 @@ abstract class SqlBuilder
         foreach ($data as $i => $item_array) {
             $z = '(';
             foreach ($item_array as $k => $v) {
-                // if (in_array($k, array_keys($this->__tableSchema['columns']))) {
-                //     if (!in_array($k, $fields)) {
-                //         $fields[] = $k;
-                //     }
-                //     $z                                            .= ':' . $k . '_' . $i . ', ';
-                //     $this->__lastPrepareData[':' . $k . '_' . $i] = $v;
-                // }
-
-                if (!in_array($k, $fields)) {
-                    $fields[] = $k;
+                if (in_array($k, array_keys($this->_tableSchema['columns']))) {
+                    if (!in_array($k, $fields)) {
+                        $fields[] = $k;
+                    }
+                    $z                                            .= ':' . $k . '_' . $i . ', ';
+                    $this->__lastPrepareData[':' . $k . '_' . $i] = $v;
                 }
-                $z                                            .= ':' . $k . '_' . $i . ', ';
-                $this->__lastPrepareData[':' . $k . '_' . $i] = $v;
             }
             $zz .= rtrim($z, ', ') . '),';
         }
@@ -394,13 +385,10 @@ abstract class SqlBuilder
             $data = array_merge($data, $this->__autoUpdate());
         }
         foreach ($data as $field => $value) {
-            // if (in_array($field, array_keys($this->__tableSchema['columns']))) {
-            //     $this->__lastPrepareSql                .= '`' . $field . '` = :' . $field . ', ';
-            //     $this->__lastPrepareData[':' . $field] = $value;
-            // }
-
-            $this->__lastPrepareSql                .= '`' . $field . '` = :' . $field . ', ';
-            $this->__lastPrepareData[':' . $field] = $value;
+            if (in_array($field, array_keys($this->_tableSchema['columns']))) {
+                $this->__lastPrepareSql                .= '`' . $field . '` = :' . $field . ', ';
+                $this->__lastPrepareData[':' . $field] = $value;
+            }
         }
         $this->__lastPrepareSql = rtrim($this->__lastPrepareSql, ', ');
         if (!empty($this->__whereConditions)) {
@@ -445,76 +433,66 @@ abstract class SqlBuilder
      * @param bool  $having 是否为having查询
      * @return string
      */
-    private function buildConditions(array $conditions, $having = false)
+    private function buildConditions(array $conditions, bool $having = false)
     {
         $conditionString = ' (';
         foreach ($conditions as $k => $v) {
-            // if (in_array($k, array_keys($this->__tableSchema['columns']))) {
-            if ($having) {
-                $z_k = '_h_' . $k . '_' . uniqid();
-            } else {
-                $z_k = '_w_' . $k . '_' . uniqid();
-            }
-            $w  = strtoupper(trim($v[0]));
-            $vv = $v[1];
-            if (!isset($v[2])) {
-                // 默认and
-                $op = 'AND';
-            } else {
-                $op = strtoupper($v[2]);
-            }
-            if (strpos($w, 'BETWEEN') !== false) {
-                // between
-                $conditionString .= ' `' . $k . '` BETWEEN :' . $z_k . '_min AND :' . $z_k . '_max ' . $op;
-                // if ($this->__tableSchema['columns'][$k] === 'int') {
-                //     $vv[0] = intval($vv[0]);
-                //     $vv[1] = intval($vv[1]);
-                // } elseif ($this->__tableSchema['columns'][$k] === 'float') {
-                //     $vv[0] = floatval($vv[0]);
-                //     $vv[1] = floatval($vv[1]);
-                // } else {
-                //     $vv[0] = strval($vv[0]);
-                //     $vv[1] = strval($vv[1]);
-                // }
-                $this->__lastPrepareData[':' . $z_k . '_min'] = $vv[0];
-                $this->__lastPrepareData[':' . $z_k . '_max'] = $vv[1];
-            } else if (strpos($w, 'IN') !== false) {
-                // in 不能用参数绑定，预处理
-                $ppp = '';
-                $vv  = array_unique($vv);
-                foreach ($vv as $var) {
-                    // if ($this->__tableSchema['columns'][$k] === 'int') {
-                    //     $ppp .= intval($var) . ',';
-                    // } else {
-                    //     $ppp .= '\'' . strval($var) . '\',';
-                    // }
-                    if (gettype($var) == 'integer') {
-                        $ppp .= intval($var) . ',';
-                    } else {
-                        $ppp .= '\'' . strval($var) . '\',';
-                    }
-                }
-                $conditionString .= ' `' . $k . '` in (' . rtrim($ppp, ',') . ') ' . $op;
-            } else {
-                // > < != = like %112233% intval => 0
-                $conditionString .= ' `' . $k . '` ' . $w . ' :' . $z_k . ' ' . $op;
-                // if ($this->__tableSchema['columns'][$k] === 'int') {
-                //     $vv = $w === 'LIKE' ? strval($vv) : intval($vv);
-                // } elseif ($this->__tableSchema['columns'][$k] === 'float') {
-                //     $vv = floatval($vv);
-                // } else {
-                //     $vv = strval($vv);
-                // }
-                if (gettype($vv) === 'integer') {
-                    $vv = $w === 'LIKE' ? strval($vv) : intval($vv);
-                } elseif (gettype($vv) === 'double') {
-                    $vv = floatval($vv);
+            $k = trim($k, '`');
+            if ($having == true || ($having == false && in_array($k, array_keys($this->_tableSchema['columns'])))) {
+                if ($having) {
+                    $z_k = '_h_' . $k . '_' . uniqid();
                 } else {
-                    $vv = strval($vv);
+                    $z_k = '_w_' . $k . '_' . uniqid();
                 }
-                $this->__lastPrepareData[':' . $z_k] = $vv;
+                $w  = strtoupper(trim($v[0]));
+                $vv = $v[1];
+                if (!isset($v[2])) {
+                    // 默认and
+                    $op = 'AND';
+                } else {
+                    $op = strtoupper($v[2]);
+                }
+                if (strpos($w, 'BETWEEN') !== false) {
+                    // between
+                    $conditionString .= ' `' . $k . '` BETWEEN :' . $z_k . '_min AND :' . $z_k . '_max ' . $op;
+                    if ($this->_tableSchema['columns'][$k] ?? '' === 'int') {
+                        $vv[0] = intval($vv[0]);
+                        $vv[1] = intval($vv[1]);
+                    } elseif ($this->_tableSchema['columns'][$k] ?? '' === 'float') {
+                        $vv[0] = floatval($vv[0]);
+                        $vv[1] = floatval($vv[1]);
+                    } else {
+                        $vv[0] = strval($vv[0]);
+                        $vv[1] = strval($vv[1]);
+                    }
+                    $this->__lastPrepareData[':' . $z_k . '_min'] = $vv[0];
+                    $this->__lastPrepareData[':' . $z_k . '_max'] = $vv[1];
+                } else if (strpos($w, 'IN') !== false) {
+                    // in 不能用参数绑定，预处理
+                    $ppp = '';
+                    $vv  = array_unique($vv);
+                    foreach ($vv as $var) {
+                        if ($this->_tableSchema['columns'][$k] ?? '' === 'int') {
+                            $ppp .= intval($var) . ',';
+                        } else {
+                            $ppp .= '\'' . strval($var) . '\',';
+                        }
+                    }
+                    $conditionString .= ' `' . $k . '` in (' . rtrim($ppp, ',') . ') ' . $op;
+                } else {
+                    // > < != = like %112233% intval => 0
+                    $conditionString .= ' `' . $k . '` ' . $w . ' :' . $z_k . ' ' . $op;
+                    if ($this->_tableSchema['columns'][$k] ?? '' === 'int') {
+                        $vv = $w === 'LIKE' ? strval($vv) : intval($vv);
+                    } elseif ($this->_tableSchema['columns'][$k] ?? '' === 'float') {
+                        $vv = floatval($vv);
+                    } else {
+                        $vv = strval($vv);
+                    }
+
+                    $this->__lastPrepareData[':' . $z_k] = $vv;
+                }
             }
-            // }
         }
         return rtrim(rtrim($conditionString, 'OR'), 'AND') . ') ';
     }
