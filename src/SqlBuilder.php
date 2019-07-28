@@ -1,6 +1,6 @@
 <?php
 /**
- * Desc:
+ * Desc: SQL语句生成
  * User: baagee
  * Date: 2019/7/27
  * Time: 20:34
@@ -14,7 +14,7 @@ abstract class SqlBuilder
      * 表名
      * @var string
      */
-    protected $tableName = '';
+    protected $_tableName = '';
     /**
      * 表文件
      * @var array|mixed
@@ -72,7 +72,7 @@ abstract class SqlBuilder
     /**
      * 清除上次执行的
      */
-    protected function clear()
+    protected function _clear()
     {
         $this->__havingConditions = '';
         $this->__orderBy          = '';
@@ -136,7 +136,7 @@ abstract class SqlBuilder
      * @param bool $is_having
      * @return static
      */
-    private function whereOrHaving($conditions, $is_and = true, $is_having = false)
+    private function whereOrHaving(array $conditions, $is_and = true, $is_having = false)
     {
         if (empty($conditions)) {
             return $this;
@@ -250,62 +250,59 @@ abstract class SqlBuilder
         return $this;
     }
 
-    // /**
-    //  * 自增
-    //  * @param string $field 要自增的字段
-    //  * @param int    $step  自增步长
-    //  * @return int
-    //  */
-    // final public function increment($field, $step = 1)
-    // {
-    //     return $this->incrementOrDecrement($field, $step, true);
-    // }
+    /**
+     * @param     $field
+     * @param int $step
+     * @return array
+     */
+    final protected function _buildIncrement(string $field, $step = 1)
+    {
+        return $this->incrementOrDecrement($field, $step, true);
+    }
 
-    // /**
-    //  * 自增自减
-    //  * @param string $field        字段
-    //  * @param int    $step         步长
-    //  * @param bool   $is_increment 是否自增
-    //  * @return int
-    //  */
-    // private function incrementOrDecrement($field, $step = 1, $is_increment = true)
-    // {
-    //     $field                  = trim($field, '`');
-    //     $step                   = abs(intval($step));
-    //     $this->__lastPrepareSql = 'UPDATE `' . $this->tableName . '` SET `' . $field . '` = `' . $field . '`';
-    //     if ($is_increment) {
-    //         $this->__lastPrepareSql .= '+' . intval($step);
-    //     } else {
-    //         $this->__lastPrepareSql .= '-' . intval($step);
-    //     }
-    //     if (!empty($this->__whereConditions)) {
-    //         $this->__lastPrepareSql .= $this->__whereConditions;
-    //     }
-    //     return [
-    //         'sql'  => $this->__lastPrepareSql,
-    //         'data' => $this->__lastPrepareData,
-    //     ];
-    // }
+    /**
+     * @param      $field
+     * @param int  $step
+     * @param bool $is_increment
+     * @return array
+     */
+    private function incrementOrDecrement(string $field, $step = 1, $is_increment = true)
+    {
+        $field                  = trim($field, '`');
+        $step                   = abs(intval($step));
+        $this->__lastPrepareSql = 'UPDATE `' . $this->_tableName . '` SET `' . $field . '` = `' . $field . '`';
+        if ($is_increment) {
+            $this->__lastPrepareSql .= '+' . intval($step);
+        } else {
+            $this->__lastPrepareSql .= '-' . intval($step);
+        }
+        if (!empty($this->__whereConditions)) {
+            $this->__lastPrepareSql .= $this->__whereConditions;
+        }
+        return [
+            'sql'  => $this->__lastPrepareSql,
+            'data' => $this->__lastPrepareData,
+        ];
+    }
 
-    // /**
-    //  * 自减
-    //  * @param string $field 要自减的字段
-    //  * @param int    $step  步长
-    //  * @return int
-    //  */
-    // final public function decrement($field, $step = 1)
-    // {
-    //     return $this->incrementOrDecrement($field, $step, false);
-    // }
+    /**
+     * @param     $field
+     * @param int $step
+     * @return array
+     */
+    final protected function _buildDecrement(string $field, $step = 1)
+    {
+        return $this->incrementOrDecrement($field, $step, false);
+    }
 
     /**
      * 添加数据
      * @param array $data 数据
      * @return array
      */
-    final protected function buildInsert(array $data, bool $replace = false)
+    final protected function _buildInsert(array $data, bool $replace = false)
     {
-        $this->__lastPrepareSql  = ($replace ? 'REPLACE' : 'INSERT') . ' INTO `' . $this->tableName . '` (';
+        $this->__lastPrepareSql  = ($replace ? 'REPLACE' : 'INSERT') . ' INTO `' . $this->_tableName . '` (';
         $fields                  = $placeholder = '';
         $this->__lastPrepareData = [];
         foreach ($data as $k => $v) {
@@ -334,9 +331,9 @@ abstract class SqlBuilder
      * @param bool  $replace
      * @return array
      */
-    final protected function buildBatchInsert(array $data, bool $replace = false)
+    final protected function _buildBatchInsert(array $data, bool $replace = false)
     {
-        $this->__lastPrepareSql  = ($replace ? 'REPLACE' : 'INSERT') . ' INTO `' . $this->tableName . '` (';
+        $this->__lastPrepareSql  = ($replace ? 'REPLACE' : 'INSERT') . ' INTO `' . $this->_tableName . '` (';
         $fields                  = [];
         $zz                      = '';
         $this->__lastPrepareData = [];
@@ -372,9 +369,9 @@ abstract class SqlBuilder
      * 删除数据
      * @return array
      */
-    final protected function buildDelete()
+    final protected function _buildDelete()
     {
-        $this->__lastPrepareSql = 'DELETE FROM `' . $this->tableName . '`';
+        $this->__lastPrepareSql = 'DELETE FROM `' . $this->_tableName . '`';
         if (!empty($this->__whereConditions)) {
             $this->__lastPrepareSql .= $this->__whereConditions;
         }
@@ -390,9 +387,9 @@ abstract class SqlBuilder
      * @param array $data 要更新的数据
      * @return array
      */
-    final protected function buildUpdate(array $data)
+    final protected function _buildUpdate(array $data)
     {
-        $this->__lastPrepareSql = 'UPDATE `' . $this->tableName . '` SET ';
+        $this->__lastPrepareSql = 'UPDATE `' . $this->_tableName . '` SET ';
         if (method_exists($this, '__autoUpdate')) {
             $data = array_merge($data, $this->__autoUpdate());
         }
@@ -420,7 +417,7 @@ abstract class SqlBuilder
      * 查询数据
      * @return array 结果集二维数组
      */
-    final protected function buildSelect()
+    final protected function _buildSelect()
     {
         $this->__lastPrepareSql = 'SELECT ';
         if (empty($this->__fields)) {
@@ -428,91 +425,13 @@ abstract class SqlBuilder
         } else {
             $this->__lastPrepareSql .= $this->__fields;
         }
-        $this->__lastPrepareSql .= (' FROM `' . $this->tableName . '`' . $this->__whereConditions . $this->__groupBy .
+        $this->__lastPrepareSql .= (' FROM `' . $this->_tableName . '`' . $this->__whereConditions . $this->__groupBy .
             $this->__havingConditions . $this->__orderBy . $this->__limit . $this->__lock);
         return [
             'sql'  => $this->__lastPrepareSql,
             'data' => $this->__lastPrepareData,
         ];
     }
-
-    //
-    // /**
-    //  * sum|count|avg|min|max 查询
-    //  * @param string $function sum|count|avg|min|max
-    //  * @param string $field    字段
-    //  * @return mixed
-    //  */
-    // private function sumOrCountOrAvgOrMinOrMax($function, $field)
-    // {
-    //     $field = trim(trim($field), '`');
-    //     if ($field !== '*') {
-    //         $field = '`' . trim($field, '`') . '`';
-    //     }
-    //     $this->__lastPrepareSql = 'SELECT ' . strtoupper($function) . '(' . $field . ') AS _' . $function . ' FROM `' . $this->tableName . '` ';
-    //     if (!empty($this->__whereConditions)) {
-    //         $this->__lastPrepareSql .= $this->__whereConditions;
-    //     }
-    //
-    //     if (!empty($this->__havingConditions)) {
-    //         $this->__lastPrepareSql .= $this->__havingConditions;
-    //     }
-    //     //else 查询全部
-    //     return [
-    //         'sql'  => $this->__lastPrepareSql,
-    //         'data' => $this->__lastPrepareData,
-    //     ];
-    // }
-    //
-    // /**
-    //  * 查询数目
-    //  * @param string $field 字段
-    //  * @return mixed
-    //  */
-    // final public function count($field = '*')
-    // {
-    //     return $this->sumOrCountOrAvgOrMinOrMax('count', $field);
-    // }
-    //
-    // /**
-    //  * 查询字段和
-    //  * @param string $field 字段
-    //  * @return mixed
-    //  */
-    // final public function sum($field)
-    // {
-    //     return $this->sumOrCountOrAvgOrMinOrMax('sum', $field);
-    // }
-    //
-    // /**
-    //  * 求平均数
-    //  * @param string $field 求平均数的字段
-    //  * @return mixed
-    //  */
-    // final public function avg($field)
-    // {
-    //     return $this->sumOrCountOrAvgOrMinOrMax('avg', $field);
-    // }
-    //
-    // /**
-    //  * 查询字段最大值
-    //  * @param string $field 字段
-    //  * @return mixed
-    //  */
-    // final public function max($field)
-    // {
-    //     return $this->sumOrCountOrAvgOrMinOrMax('max', $field);
-    // }
-    //
-    // /**
-    //  * 查询字段最小值
-    //  * @param string $field 字段
-    //  * @return mixed
-    //  */
-    // final public function min($field)
-    // {
-    //     return $this->sumOrCountOrAvgOrMinOrMax('min', $field);
-    // }
 
     /**
      * 处理条件
