@@ -45,11 +45,11 @@ final class SimpleTable extends SqlBuilder implements SimpleTableInterface
                 $schema['autoIncrement'] = $v['Field'];
             }
             if ((strpos($v['Type'], 'int') !== false)) {
-                $field_type = 'int';
+                $field_type = self::COLUMN_TYPE_INT;
             } else if (strpos($v['Type'], 'decimal') !== false) {
-                $field_type = 'float';
+                $field_type = self::COLUMN_TYPE_FLOAT;
             } else {
-                $field_type = 'string';
+                $field_type = self::COLUMN_TYPE_STRING;
             }
             $columns[$v['Field']] = $field_type;
         }

@@ -10,6 +10,10 @@ namespace BaAGee\MySQL\Base;
 
 abstract class SqlBuilder
 {
+    protected const COLUMN_TYPE_INT    = 'int';
+    protected const COLUMN_TYPE_FLOAT  = 'float';
+    protected const COLUMN_TYPE_STRING = 'string';
+    
     /**
      * 表名
      * @var string
@@ -182,9 +186,10 @@ abstract class SqlBuilder
                 break;
             }
             if (in_array($field, array_keys($this->_tableSchema['columns']))) {
+                $field          = trim($field, '`');
                 $this->__fields .= ', `' . trim($field, '`') . '`';
             } else {
-                $this->__fields .= ', ' . trim($field) . '';
+                $this->__fields .= ', ' . $field . '';
             }
         }
         $this->__fields = trim($this->__fields, ',');
@@ -381,9 +386,6 @@ abstract class SqlBuilder
     final protected function _buildUpdate(array $data)
     {
         $this->__lastPrepareSql = 'UPDATE `' . $this->_tableName . '` SET ';
-        if (method_exists($this, '__autoUpdate')) {
-            $data = array_merge($data, $this->__autoUpdate());
-        }
         foreach ($data as $field => $value) {
             if (in_array($field, array_keys($this->_tableSchema['columns']))) {
                 $this->__lastPrepareSql                .= '`' . $field . '` = :' . $field . ', ';
@@ -455,10 +457,10 @@ abstract class SqlBuilder
                 if (strpos($w, 'BETWEEN') !== false) {
                     // between
                     $conditionString .= ' `' . $k . '` BETWEEN :' . $z_k . '_min AND :' . $z_k . '_max ' . $op;
-                    if ($this->_tableSchema['columns'][$k] ?? '' === 'int') {
+                    if ($this->_tableSchema['columns'][$k] ?? '' === self::COLUMN_TYPE_INT) {
                         $vv[0] = intval($vv[0]);
                         $vv[1] = intval($vv[1]);
-                    } elseif ($this->_tableSchema['columns'][$k] ?? '' === 'float') {
+                    } elseif ($this->_tableSchema['columns'][$k] ?? '' === self::COLUMN_TYPE_FLOAT) {
                         $vv[0] = floatval($vv[0]);
                         $vv[1] = floatval($vv[1]);
                     } else {
@@ -472,7 +474,7 @@ abstract class SqlBuilder
                     $ppp = '';
                     $vv  = array_unique($vv);
                     foreach ($vv as $var) {
-                        if ($this->_tableSchema['columns'][$k] ?? '' === 'int') {
+                        if ($this->_tableSchema['columns'][$k] ?? '' === self::COLUMN_TYPE_INT) {
                             $ppp .= intval($var) . ',';
                         } else {
                             $ppp .= '\'' . strval($var) . '\',';
@@ -482,9 +484,9 @@ abstract class SqlBuilder
                 } else {
                     // > < != = like %112233% intval => 0
                     $conditionString .= ' `' . $k . '` ' . $w . ' :' . $z_k . ' ' . $op;
-                    if ($this->_tableSchema['columns'][$k] ?? '' === 'int') {
+                    if ($this->_tableSchema['columns'][$k] ?? '' === self::COLUMN_TYPE_INT) {
                         $vv = $w === 'LIKE' ? strval($vv) : intval($vv);
-                    } elseif ($this->_tableSchema['columns'][$k] ?? '' === 'float') {
+                    } elseif ($this->_tableSchema['columns'][$k] ?? '' === self::COLUMN_TYPE_FLOAT) {
                         $vv = floatval($vv);
                     } else {
                         $vv = strval($vv);
