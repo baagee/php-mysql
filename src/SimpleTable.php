@@ -92,8 +92,8 @@ final class SimpleTable extends SqlBuilder implements SimpleTableInterface
      */
     final public function insert(array $data, bool $replace = false)
     {
-        $res = $this->_buildInsert($data, $replace);
-        $res = $this->_dbInstance->execute($res['sql'], $res['data']);
+        $sqlData = $this->_buildInsert($data, $replace);
+        $res     = $this->_dbInstance->execute($sqlData['sql'], $sqlData['data']);
         $this->_clear();
         if ($res == 1) {
             return $this->_dbInstance->getLastInsertId();
@@ -111,8 +111,8 @@ final class SimpleTable extends SqlBuilder implements SimpleTableInterface
      */
     final public function batchInsert(array $rows, bool $replace = false)
     {
-        $res = $this->_buildBatchInsert($rows, $replace);
-        $res = $this->_dbInstance->execute($res['sql'], $res['data']);
+        $sqlData = $this->_buildBatchInsert($rows, $replace);
+        $res     = $this->_dbInstance->execute($sqlData['sql'], $sqlData['data']);
         $this->_clear();
         if ($res > 0) {
             return $res;
@@ -128,8 +128,8 @@ final class SimpleTable extends SqlBuilder implements SimpleTableInterface
      */
     final public function delete()
     {
-        $res = $this->_buildDelete();
-        $res = $this->_dbInstance->execute($res['sql'], $res['data']);
+        $sqlData = $this->_buildDelete();
+        $res     = $this->_dbInstance->execute($sqlData['sql'], $sqlData['data']);
         $this->_clear();
         return $res;
     }
@@ -142,25 +142,25 @@ final class SimpleTable extends SqlBuilder implements SimpleTableInterface
      */
     final public function update(array $data = [])
     {
-        $res = $this->_buildUpdate($data);
-        $res = $this->_dbInstance->execute($res['sql'], $res['data']);
+        $sqlData = $this->_buildUpdate($data);
+        $res     = $this->_dbInstance->execute($sqlData['sql'], $sqlData['data']);
         $this->_clear();
         return $res;
     }
 
     /**
+     * 查询
      * @param bool $generator
      * @return array|\Generator
      * @throws \Exception
      */
     final public function select(bool $generator = false)
     {
-        $res = $this->_buildSelect();
-
+        $sqlData = $this->_buildSelect();
         if ($generator) {
-            $res = $this->_dbInstance->yieldQuery($res['sql'], $res['data']);
+            $res = $this->_dbInstance->yieldQuery($sqlData['sql'], $sqlData['data']);
         } else {
-            $res = $this->_dbInstance->query($res['sql'], $res['data']);
+            $res = $this->_dbInstance->query($sqlData['sql'], $sqlData['data']);
         }
         $this->_clear();
         return $res;
@@ -170,13 +170,13 @@ final class SimpleTable extends SqlBuilder implements SimpleTableInterface
      * 自增
      * @param string $field
      * @param int    $step
-     * @return array|int
+     * @return int
      * @throws \Exception
      */
     final public function increment(string $field, $step = 1)
     {
-        $res = $this->_buildIncrement($field, $step);
-        $res = $this->_dbInstance->execute($res['sql'], $res['data']);
+        $sqlData = $this->_buildIncrement($field, $step);
+        $res     = $this->_dbInstance->execute($sqlData['sql'], $sqlData['data']);
         $this->_clear();
         return $res;
     }
@@ -185,13 +185,13 @@ final class SimpleTable extends SqlBuilder implements SimpleTableInterface
      * 自减
      * @param string $field
      * @param int    $step
-     * @return array|int
+     * @return int
      * @throws \Exception
      */
     final public function decrement(string $field, $step = 1)
     {
-        $res = $this->_buildDecrement($field, $step);
-        $res = $this->_dbInstance->execute($res['sql'], $res['data']);
+        $sqlData = $this->_buildDecrement($field, $step);
+        $res     = $this->_dbInstance->execute($sqlData['sql'], $sqlData['data']);
         $this->_clear();
         return $res;
     }
