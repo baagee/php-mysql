@@ -8,15 +8,81 @@
 
 namespace BaAGee\MySQL;
 
-use BaAGee\MySQL\Base\SimpleTableAbstract;
 use BaAGee\MySQL\Base\SimpleTableInterface;
+use BaAGee\MySQL\Base\SingletonTrait;
+use BaAGee\MySQL\Base\SqlBuilder;
 
 /**
  * Class SimpleTable
  * @package BaAGee\MySQL
  */
-final class SimpleTable extends SimpleTableAbstract implements SimpleTableInterface
+final class SimpleTable extends SqlBuilder implements SimpleTableInterface
 {
+    use SingletonTrait;
+
+    /**
+     * @var DB
+     */
+    protected $_dbInstance = null;
+
+    /**
+     * 获取表结构
+     * @param $tableName
+     * @return array
+     * @throws \Exception
+     */
+    private static function getTableSchema($tableName)
+    {
+        $sql     = 'DESC `' . $tableName . '`';
+        $res     = DB::getInstance()->query($sql);
+        $schema  = [];
+        $columns = [];
+        foreach ($res as $v) {
+            if ($v['Key'] === 'PRI') {
+                $schema['primaryKey'] = $v['Field'];
+            }
+            if ($v['Extra'] === 'auto_increment') {
+                $schema['autoIncrement'] = $v['Field'];
+            }
+            if ((strpos($v['Type'], 'int') !== false)) {
+                $field_type = self::COLUMN_TYPE_INT;
+            } else if (strpos($v['Type'], 'decimal') !== false) {
+                $field_type = self::COLUMN_TYPE_FLOAT;
+            } else {
+                $field_type = self::COLUMN_TYPE_STRING;
+            }
+            $columns[$v['Field']] = $field_type;
+        }
+        $schema['columns'] = $columns;
+        return $schema;
+    }
+
+    /**
+     * 获取操作一个表的简单Table类
+     * @param $tableName
+     * @return $this
+     * @throws \Exception
+     */
+    final public static function getInstance(string $tableName)
+    {
+        $tableName = trim($tableName);
+        if (empty($tableName)) {
+            throw new \Exception('表名不能为空');
+        }
+        if (empty(self::$_instance[$tableName])) {
+            $obj                         = new static();
+            $obj->_tableName             = $tableName;
+            $obj->_tableSchema           = self::getTableSchema($tableName);
+            $obj->_dbInstance            = DB::getInstance();
+            self::$_instance[$tableName] = $obj;
+        } else {
+            $obj = self::$_instance[$tableName];
+            // 清空上次的缓存字段
+            $obj->_clear();
+        }
+        return $obj;
+    }
+
     /**
      * 插入数据insert into 或者replace into 返回插入的ID
      * @param array $data
@@ -26,18 +92,30 @@ final class SimpleTable extends SimpleTableAbstract implements SimpleTableInterf
      */
     final public function insert(array $data, bool $replace = false)
     {
-        $columns = $holder = [];
-        foreach ($data as $column => $value) {
-            $columns[] = sprintf('`%s`', $column);
-            $holder[]  = ':' . $column;
-        }
-        $columns = implode(', ', $columns);
-        $holder  = sprintf('(%s)', implode(',', $holder));
-        $sql     = trim(sprintf('%s INTO `%s`(%s) VALUES %s', $replace ? 'REPLACE' : 'INSERT', $this->tableName, $columns, $holder));
-        $res     = $this->db->execute($sql, $data);
-        $this->clear();
+        $sqlData = $this->_buildInsert($data, $replace);
+        $res     = $this->_dbInstance->execute($sqlData['sql'], $sqlData['data']);
+        $this->_clear();
         if ($res == 1) {
-            return $this->db->getLastInsertId();
+            return $this->_dbInstance->getLastInsertId();
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * 批量插入
+     * @param array $rows
+     * @param bool  $replace
+     * @return int|null
+     * @throws \Exception
+     */
+    final public function batchInsert(array $rows, bool $replace = false)
+    {
+        $sqlData = $this->_buildBatchInsert($rows, $replace);
+        $res     = $this->_dbInstance->execute($sqlData['sql'], $sqlData['data']);
+        $this->_clear();
+        if ($res > 0) {
+            return $res;
         } else {
             return null;
         }
@@ -45,15 +123,14 @@ final class SimpleTable extends SimpleTableAbstract implements SimpleTableInterf
 
     /**
      * 删除数据
-     * @param array $data
      * @return int
      * @throws \Exception
      */
-    final public function delete(array $data = [])
+    final public function delete()
     {
-        $sql = trim(sprintf('DELETE FROM `%s` %s', $this->tableName, $this->where));
-        $res = $this->db->execute($sql, $data);
-        $this->clear();
+        $sqlData = $this->_buildDelete();
+        $res     = $this->_dbInstance->execute($sqlData['sql'], $sqlData['data']);
+        $this->_clear();
         return $res;
     }
 
@@ -65,28 +142,57 @@ final class SimpleTable extends SimpleTableAbstract implements SimpleTableInterf
      */
     final public function update(array $data = [])
     {
-        $sql = trim(sprintf('UPDATE `%s` SET %s %s', $this->tableName, $this->updateFields, $this->where));
-        $res = $this->db->execute($sql, $data);
-        $this->clear();
+        $sqlData = $this->_buildUpdate($data);
+        $res     = $this->_dbInstance->execute($sqlData['sql'], $sqlData['data']);
+        $this->_clear();
         return $res;
     }
 
     /**
-     * @param array $data
-     * @return array
+     * 查询
+     * @param bool $generator
+     * @return array|\Generator
      * @throws \Exception
      */
-    final public function select(array $data = [])
+    final public function select(bool $generator = false)
     {
-        $sql = trim(sprintf('SELECT %s FROM `%s` %s %s %s %s %s %s',
-            !empty($this->selectFields) ? $this->selectFields : '*', $this->tableName, $this->where, $this->groupBy,
-            $this->having, $this->orderBy, $this->limitOffset, $this->lock));
-        if ($this->selectYield) {
-            $res = $this->db->yieldQuery($sql, $data);
+        $sqlData = $this->_buildSelect();
+        if ($generator) {
+            $res = $this->_dbInstance->yieldQuery($sqlData['sql'], $sqlData['data']);
         } else {
-            $res = $this->db->query($sql, $data);
+            $res = $this->_dbInstance->query($sqlData['sql'], $sqlData['data']);
         }
-        $this->clear();
+        $this->_clear();
+        return $res;
+    }
+
+    /**
+     * 自增
+     * @param string $field
+     * @param int    $step
+     * @return int
+     * @throws \Exception
+     */
+    final public function increment(string $field, $step = 1)
+    {
+        $sqlData = $this->_buildIncrement($field, $step);
+        $res     = $this->_dbInstance->execute($sqlData['sql'], $sqlData['data']);
+        $this->_clear();
+        return $res;
+    }
+
+    /**
+     * 自减
+     * @param string $field
+     * @param int    $step
+     * @return int
+     * @throws \Exception
+     */
+    final public function decrement(string $field, $step = 1)
+    {
+        $sqlData = $this->_buildDecrement($field, $step);
+        $res     = $this->_dbInstance->execute($sqlData['sql'], $sqlData['data']);
+        $this->_clear();
         return $res;
     }
 }

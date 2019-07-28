@@ -40,13 +40,15 @@ class ArticleModel extends BaseModel
     protected $table = 'article';
 
     /**
-     * 根据ID查询一条
      * @param $id
-     * @return mixed
+     * @return array|Generator
+     * @throws Exception
      */
     public function getOne($id)
     {
-        return $this->simpleTable->where('id=:id')->select(['id' => $id])[0];
+        return $this->simpleTable->where([
+                'id' => ['=', $id]
+            ])->select()[0] ?? [];
     }
 }
 

@@ -10,11 +10,13 @@ namespace BaAGee\MySQL\Base;
 
 interface SimpleTableInterface
 {
-    public function select(array $data);
+    public function select();
 
     public function update(array $data);
 
-    public function delete(array $data);
+    public function delete();
 
     public function insert(array $data, bool $replace);
+
+    public function batchInsert(array $data, bool $replace);
 }
