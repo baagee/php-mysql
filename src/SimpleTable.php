@@ -33,7 +33,7 @@ final class SimpleTable extends SqlBuilder implements SimpleTableInterface
      */
     private static function getTableSchema($tableName)
     {
-        $sql     = 'DESC `' . $tableName . '`';
+        $sql     = 'SHOW COLUMNS FROM `' . $tableName . '`';
         $res     = DB::getInstance()->query($sql);
         $schema  = [];
         $columns = [];
