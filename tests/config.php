@@ -1,6 +1,6 @@
 <?php
 /**
- * Desc: 数据库配置
+ * Desc: mysql数据库配置
  * User: baagee
  * Date: 2019/3/15
  * Time: 下午6:47
@@ -13,6 +13,11 @@ return [
     'database'       => 'spiders_data',
     'connectTimeout' => 1,
     'charset'        => 'utf8mb4',
+    'retryTimes'     => 1,//重试次数
+    'options'        => [
+        \PDO::ATTR_PERSISTENT => true,
+        \PDO::ATTR_CASE       => \PDO::CASE_LOWER,
+    ],
     'slave'          => [
         [
             'host'           => '',
