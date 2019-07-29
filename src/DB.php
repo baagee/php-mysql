@@ -104,12 +104,12 @@ final class DB extends DBAbstract implements DBInterface
             $this->PDOStatement = $connection->prepare($this->lastPrepareSql);
             if ($this->PDOStatement === false) {
                 $errorInfo = $connection->errorInfo();
-                throw new \PDOException($errorInfo[2] . ' #SQL:' . $this->getLastSql(), $errorInfo[1]);
+                throw new \PDOException($errorInfo[2], $errorInfo[1]);
             }
             $this->PDOStatement->execute($this->lastPrepareData);
             $errorInfo = $this->PDOStatement->errorInfo();
             if ($errorInfo[0] != '00000') {
-                throw new \PDOException($errorInfo[2] . ' #SQL:' . $this->getLastSql(), $errorInfo[1]);
+                throw new \PDOException($errorInfo[2], $errorInfo[1]);
             }
         } catch (\Exception $e) {
             // 重试三次
@@ -118,7 +118,7 @@ final class DB extends DBAbstract implements DBInterface
                 $retryTimes++;
                 $this->runSql($isRead, $sql, $data, $retryTimes);
             }
-            throw $e;
+            throw new \PDOException($e->getMessage() . ' [SQL: ' . $this->getLastSql() . ']', $e->getCode());
         }
     }
 
