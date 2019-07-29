@@ -145,7 +145,7 @@ abstract class SqlBuilder
         if (empty($conditions)) {
             return $this;
         }
-        $conditionString = $this->buildConditions($conditions, $is_having);
+        $conditionString = '(' . $this->buildConditions($conditions, $is_having) . ')';
         if ($is_having) {
             // having
             if (empty($this->__havingConditions)) {
