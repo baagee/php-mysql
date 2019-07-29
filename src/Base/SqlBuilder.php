@@ -145,7 +145,7 @@ abstract class SqlBuilder
         if (empty($conditions)) {
             return $this;
         }
-        $conditionString = $this->buildConditions($conditions, 'AND', $is_having);
+        $conditionString = $this->buildConditions($conditions, $is_having);
         if ($is_having) {
             // having
             if (empty($this->__havingConditions)) {
@@ -431,7 +431,7 @@ abstract class SqlBuilder
      * @param bool   $having
      * @return string
      */
-    protected function createSingleCondition($field, $condition, $op = 'AND', $having = false)
+    private function createSingleCondition(string $field, array $condition, string $op = 'AND', bool $having = false)
     {
         $conditionString = '';
         $k               = trim($field, '`');
@@ -496,7 +496,7 @@ abstract class SqlBuilder
      * @param bool  $having
      * @return string
      */
-    public function buildConditions(array $conditions, $having = false)
+    private function buildConditions(array $conditions, $having = false)
     {
         $keys   = array_keys($conditions);
         $conStr = '';
