@@ -93,7 +93,6 @@ $config = include __DIR__ . '/config.php';
 /*DB测试*/
 \BaAGee\MySQL\DBConfig::init($config);
 
-
 $builder = SimpleTable::getInstance('student_score');
 
 /*插入测试*/
@@ -110,13 +109,36 @@ $res = $builder->batchInsert($rows, true);
 var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
 var_dump($res);
 
-/*查询测试*/
+/*查询测试 多条件嵌套*/
 $res = $builder->fields([
-    'student_name', 'student_id', 'chinese', 'english', 'math', 'biology', 'history', 'class_id', 'age', 'sex'
+    'student_name', '`student_id`', 'chinese', 'english', 'math', 'biology', 'history', 'class_id', 'age', 'sex'
 ])->where([
-    'history'  => ['>', '60', 'or'],
-    'class_id' => ['in', [1, 2, 3, 4]]
-])->where([
+    [
+        'history'  => ['>', '60'],
+        'or',
+        'class_id' => ['in', [1, 2, 3, 4]]
+    ],
+    'or',
+    [
+        'sex' => ['=', 0],
+        'age' => ['<', 19],
+        'or',
+        [
+            'sex' => ['=', 0],
+            'age' => ['<', 19],
+            'or',
+            [
+                'sex' => ['=', 0],
+                'age' => ['<', 19],
+                'or',
+                [
+                    'sex' => ['=', 0],
+                    'age' => ['<', 19]
+                ]
+            ]
+        ]
+    ]
+])->orWhere([
     'age' => ['=', 18]
 ])->orderBy(['id' => 'desc'])->limit(0, 2)->groupBy('student_name')->lockInShareMode()->select(false);
 var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
@@ -129,15 +151,18 @@ var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
 // var_dump($res);
 
 $res = $builder->fields([
-    'student_name', 'math', 'english', 'class_id as cid'
+    'student_name', 'math', 'english', '`class_id` as cid'
 ])->where([
     'class_id' => ['between', [1, 5]],
     'sex'      => ['=', 1],
 ])->orWhere([
-    'math'    => ['>', 60, 'or'],
-    'english' => ['<', 60]
+    'math'    => ['>', 60],
+    'english' => ['<', 60],
+    // 'or',
 ])->having(['`cid`' => ['>', 3]])->orHaving([
-    'cid' => ['<', 2]
+    'cid'  => ['<', 2],
+    // 'or',
+    'math' => ['>', 60]
 ])->limit(0, 2)->orderBy(['age' => 'desc', 'student_id' => 'asc'])
     ->groupBy('student_id')->groupBy('math')->lockInShareMode()->select();
 var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
@@ -161,10 +186,20 @@ $res = $builder->where(['id' => ['=', mt_rand(300, 590)]])->delete();
 var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
 var_dump($res);
 
+// 查询
+$res = $builder->where(['id' => ['=', mt_rand(300, 590)]])->fields(['distinct `age`', 'sex'])->select();
+var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
+var_dump($res);
+
 $article = SimpleTable::getInstance('article');
 $res     = $article->insert(createArticleRow());
 var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
 var_dump($res);
+//
+// $article->where(['id' => ['>', 20]]);
+// var_dump($article);
+// $article = SimpleTable::getInstance('article');
+// var_dump($article);
 ```
 
 ### 稍微封装成Model
