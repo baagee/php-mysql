@@ -257,51 +257,6 @@ abstract class SqlBuilder
     }
 
     /**
-     * @param     $field
-     * @param int $step
-     * @return array
-     */
-    final protected function _buildIncrement(string $field, $step = 1)
-    {
-        return $this->incrementOrDecrement($field, $step, true);
-    }
-
-    /**
-     * @param      $field
-     * @param int  $step
-     * @param bool $is_increment
-     * @return array
-     */
-    private function incrementOrDecrement(string $field, $step = 1, $is_increment = true)
-    {
-        $field                  = trim($field, '`');
-        $step                   = abs(intval($step));
-        $this->__lastPrepareSql = 'UPDATE `' . $this->_tableName . '` SET `' . $field . '` = `' . $field . '`';
-        if ($is_increment) {
-            $this->__lastPrepareSql .= '+' . intval($step);
-        } else {
-            $this->__lastPrepareSql .= '-' . intval($step);
-        }
-        if (!empty($this->__whereConditions)) {
-            $this->__lastPrepareSql .= $this->__whereConditions;
-        }
-        return [
-            'sql'  => $this->__lastPrepareSql,
-            'data' => $this->__lastPrepareData,
-        ];
-    }
-
-    /**
-     * @param     $field
-     * @param int $step
-     * @return array
-     */
-    final protected function _buildDecrement(string $field, $step = 1)
-    {
-        return $this->incrementOrDecrement($field, $step, false);
-    }
-
-    /**
      * 添加数据
      * @param array $data
      * @param bool  $replace

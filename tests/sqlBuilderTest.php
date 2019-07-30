@@ -15,8 +15,14 @@ class sqlBuilderTest extends \PHPUnit\Framework\TestCase
 {
     protected $config = [];
 
+    /**
+     * @var SimpleTable
+     */
     protected $simpleTable = null;
-    protected $db          = null;
+    /**
+     * @var \BaAGee\MySQL\DB
+     */
+    protected $db = null;
 
     public function __construct(?string $name = null, array $data = [], string $dataName = '')
     {
@@ -36,9 +42,9 @@ class sqlBuilderTest extends \PHPUnit\Framework\TestCase
         $this->start();
         /*插入测试*/
         $res = $this->simpleTable->insert($this->createStudentScoreRow(), true);
-        var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
+        echo "SQL:" . $this->db->getLastSql();
         var_dump($res);
-        $this->assertNotEmpty('4544');
+        $this->assertEquals($res > 0, true);
     }
 
     public function testBatchTableInsert()
@@ -50,7 +56,7 @@ class sqlBuilderTest extends \PHPUnit\Framework\TestCase
             $rows[] = $this->createStudentScoreRow();
         }
         $res = $this->simpleTable->batchInsert($rows, true);
-        var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
+        echo "SQL:" . $this->db->getLastSql();
         var_dump($res);
         $this->assertNotEmpty('$res');
     }
@@ -60,7 +66,7 @@ class sqlBuilderTest extends \PHPUnit\Framework\TestCase
         $this->start();
         /*删除测试*/
         $res = $this->simpleTable->where(['id' => ['=', mt_rand(300, 590)]])->delete();
-        var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
+        echo "SQL:" . $this->db->getLastSql();
         var_dump($res);
         $this->assertNotEmpty('$res');
     }
@@ -69,15 +75,8 @@ class sqlBuilderTest extends \PHPUnit\Framework\TestCase
     {
         $this->start();
         /*更新测试*/
-        $res = $this->simpleTable->where(['id' => ['=', mt_rand(300, 590)]])->decrement('math', 1);
-        var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
-        var_dump($res);
-        $res = $this->simpleTable->where(['id' => ['=', mt_rand(300, 590)]])->increment('math', 1);
-        var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
-        var_dump($res);
-
         $res = $this->simpleTable->where(['id' => ['=', mt_rand(300, 590)]])->update(['student_name' => '哈哈哈' . mt_rand(0, 99)]);
-        var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
+        echo "SQL:" . $this->db->getLastSql();
         var_dump($res);
         $this->assertNotEmpty('$res');
     }
@@ -88,7 +87,7 @@ class sqlBuilderTest extends \PHPUnit\Framework\TestCase
         $res = $this->simpleTable->fields(['*'])->where(['id' => ['=', mt_rand(300, 590)]])->where(['sex' => ['=', 0]])
             ->having(['id' => ['<', 10]])->having(['age' => ['<', 20]])
             ->fields(['distinct `age`', 'sex'])->select(true);
-        var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
+        echo "SQL:" . $this->db->getLastSql();
         var_dump($res);
         /*查询测试 多条件嵌套*/
         $res = $this->simpleTable->fields([
@@ -122,13 +121,13 @@ class sqlBuilderTest extends \PHPUnit\Framework\TestCase
         ])->orWhere([
             'age' => ['=', 18]
         ])->orderBy(['id' => 'desc'])->orderBy(['age' => 'desc'])->limit(0, 2)->groupBy('student_name')->lockInShareMode()->select(false);
-        var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
+        echo "SQL:" . $this->db->getLastSql();
         // var_dump($res);
 
         $res = $this->simpleTable->fields([
             'avg(chinese)', 'class_id', 'min(`age`)', 'max(math)', 'sum(biology)', 'count(student_id)'
         ])->where(['id' => ['>', mt_rand(300, 590)]])->groupBy('class_id')->orderBy(['class_id' => 'desc'])->limit(0, 7)->select();
-        var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
+        echo "SQL:" . $this->db->getLastSql();
         // var_dump($res);
 
         $res = $this->simpleTable->fields([
@@ -155,7 +154,7 @@ class sqlBuilderTest extends \PHPUnit\Framework\TestCase
             'math' => ['>', 60]
         ])->limit(0, 2)->orderBy(['age' => 'desc', 'student_id' => 'asc'])
             ->groupBy('student_id')->groupBy('math')->lockInShareMode()->select();
-        var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
+        echo "SQL:" . $this->db->getLastSql();
         $this->assertNotEmpty('$res');
     }
 
@@ -178,7 +177,7 @@ class sqlBuilderTest extends \PHPUnit\Framework\TestCase
         /*查询测试*/
         $list = $db->query('select * from student_score where id >? order by id desc limit 2', [mt_rand(10, 100)]);
         // var_dump($list);
-        var_dump($db->getLastSql());
+        echo "SQL:" . $this->db->getLastSql();
 
         // 当一次查询数据量大时可以使用yield 返回生成器
         $list = $db->yieldQuery('select * from student_score where id>:id', ['id' => 0]);
@@ -186,13 +185,36 @@ class sqlBuilderTest extends \PHPUnit\Framework\TestCase
         foreach ($list as $i => $item) {
             // var_dump($item);
         }
-        var_dump($db->getLastSql());
-        echo 'OVER' . PHP_EOL;
+        echo "SQL:" . $this->db->getLastSql();
         $this->assertNotEmpty('ooi');
+    }
+
+    public function test1()
+    {
+        try {
+            SimpleTable::getInstance('');
+        } catch (Exception $e) {
+            $this->assertEquals($e->getMessage(), '表名不能为空');
+        }
+    }
+
+    public function test3()
+    {
+        $this->start();
+        try {
+            $sql      = 'INSERT INTO article(id,user_id1,title,content,tag,create_time) values 
+(null ,:user_id,:title,:content,:tag,:create_time)';
+            $userData = $this->createArticleRow();
+            $this->db->execute($sql, $userData);
+        } catch (Exception $e) {
+
+        }
+        $this->assertNotEmpty('fdsgs');
     }
 
     public function testTransaction()
     {
+        $this->start();
         $db = \BaAGee\MySQL\DB::getInstance();
         /*测试事务1*/
         $db->beginTransaction();
@@ -207,14 +229,15 @@ class sqlBuilderTest extends \PHPUnit\Framework\TestCase
 
         /*测试事务2*/
         $res = \BaAGee\MySQL\DB::transaction(function () use ($db) {
-            $this->transactionTest($db);
+            return $this->transactionTest($db);
         }, [$db]);
         var_dump('测试事务2 结果：' . ($res ? 'ok' : 'error'));
 
         $res = \BaAGee\MySQL\DB::transaction(function () use ($db) {
-            $this->transactionTest($db);
             throw new Exception();
+            return $this->transactionTest($db);
         }, [$db]);
+        var_dump('测试事务3 结果：' . ($res ? 'ok' : 'error'));
 
         var_dump($db->getLastPrepareSql());
         var_dump($db->getLastPrepareData());
@@ -238,15 +261,14 @@ class sqlBuilderTest extends \PHPUnit\Framework\TestCase
 (null ,:user_id,:title,:content,:tag,:create_time)';
         $userData = $this->createArticleRow();
         $db->execute($sql, $userData);
-        var_dump($db->getLastSql());
+        echo "SQL:" . $this->db->getLastSql();
 
         $sql        = 'update student_score set english=? where id = ?';
-        $updateData = [mt_rand(30, 100), 330];
+        $updateData = [mt_rand(30, 100), 313];
 
         // throw new Exception('发生失误');
         $db->execute($sql, $updateData);
-        var_dump($db->getLastSql());
-
+        echo "SQL:" . $this->db->getLastSql();
         return true;
     }
 
