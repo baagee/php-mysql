@@ -165,34 +165,4 @@ final class SimpleTable extends SqlBuilder implements SimpleTableInterface
         $this->_clear();
         return $res;
     }
-
-    /**
-     * 自增
-     * @param string $field
-     * @param int    $step
-     * @return int
-     * @throws \Exception
-     */
-    final public function increment(string $field, $step = 1)
-    {
-        $sqlData = $this->_buildIncrement($field, $step);
-        $res     = $this->_dbInstance->execute($sqlData['sql'], $sqlData['data']);
-        $this->_clear();
-        return $res;
-    }
-
-    /**
-     * 自减
-     * @param string $field
-     * @param int    $step
-     * @return int
-     * @throws \Exception
-     */
-    final public function decrement(string $field, $step = 1)
-    {
-        $sqlData = $this->_buildDecrement($field, $step);
-        $res     = $this->_dbInstance->execute($sqlData['sql'], $sqlData['data']);
-        $this->_clear();
-        return $res;
-    }
 }
