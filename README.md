@@ -170,13 +170,6 @@ var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
 // die;
 
 /*更新测试*/
-$res = $builder->where(['id' => ['=', mt_rand(300, 590)]])->decrement('math', 1);
-var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
-var_dump($res);
-$res = $builder->where(['id' => ['=', mt_rand(300, 590)]])->increment('math', 1);
-var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
-var_dump($res);
-
 $res = $builder->where(['id' => ['=', mt_rand(300, 590)]])->update(['student_name' => '哈哈哈' . mt_rand(0, 99)]);
 var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
 var_dump($res);
