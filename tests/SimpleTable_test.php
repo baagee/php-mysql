@@ -28,7 +28,7 @@ $rows = [];
 for ($i = 0; $i < 3; $i++) {
     $rows[] = createStudentScoreRow();
 }
-$res = $builder->batchInsert($rows, true);
+$res = $builder->insert($rows, true);
 var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
 var_dump($res);
 

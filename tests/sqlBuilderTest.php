@@ -43,7 +43,6 @@ class sqlBuilderTest extends \PHPUnit\Framework\TestCase
         /*插入测试*/
         $res = $this->simpleTable->insert($this->createStudentScoreRow(), true);
         echo "SQL:" . $this->db->getLastSql();
-        var_dump($res);
         $this->assertEquals($res > 0, true);
     }
 
@@ -55,7 +54,7 @@ class sqlBuilderTest extends \PHPUnit\Framework\TestCase
         for ($i = 0; $i < 3; $i++) {
             $rows[] = $this->createStudentScoreRow();
         }
-        $res = $this->simpleTable->batchInsert($rows, true);
+        $res = $this->simpleTable->insert($rows, true);
         echo "SQL:" . $this->db->getLastSql();
         var_dump($res);
         $this->assertNotEmpty('$res');

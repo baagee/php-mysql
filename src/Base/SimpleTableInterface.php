@@ -17,6 +17,4 @@ interface SimpleTableInterface
     public function delete();
 
     public function insert(array $data, bool $replace);
-
-    public function batchInsert(array $data, bool $replace);
 }
