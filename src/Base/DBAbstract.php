@@ -48,7 +48,7 @@ abstract class DBAbstract
      * @param bool $isRead
      * @return bool
      */
-    protected static function close(bool $isRead)
+    protected static function closeConnection(bool $isRead)
     {
         return Connection::close($isRead);
     }

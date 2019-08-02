@@ -18,6 +18,8 @@ final class Connection
 {
     use SingletonTrait;
 
+    protected static $slaveId = 0;
+
     /**
      * @var array mysql配置
      */
@@ -31,6 +33,14 @@ final class Connection
         if (empty(self::$config)) {
             self::$config = DBConfig::get();
         }
+    }
+
+    /**
+     * @return int
+     */
+    public static function getSlaveId()
+    {
+        return self::$slaveId;
     }
 
     /**
@@ -70,7 +80,7 @@ final class Connection
             $pdo = new \PDO($dsn, $config['user'], $config['password'], $options);
             return $pdo;
         } catch (\PDOException $e) {
-            if ($retryTimes < $config['retryTimes'] ?? 0) {
+            if ($retryTimes < ($config['retryTimes'] ?? 0)) {
                 $retryTimes++;
                 return self::getPdoObject($config, $retryTimes);
             } else {
@@ -131,8 +141,8 @@ final class Connection
                 // 读库
                 if (!isset(self::$_instance['slave'])) {
                     //读操作选择slave
-                    $sid                      = self::getGravity(array_column(self::$config['slave'], 'weight'));
-                    $connection               = self::getPdoObject(self::$config['slave'][$sid]);
+                    self::$slaveId            = self::getGravity(array_column(self::$config['slave'], 'weight'));
+                    $connection               = self::getPdoObject(self::$config['slave'][self::$slaveId]);
                     self::$_instance['slave'] = $connection;
                 } else {
                     $connection = self::$_instance['slave'];
