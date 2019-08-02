@@ -257,39 +257,12 @@ abstract class SqlBuilder
     }
 
     /**
-     * 添加数据
-     * @param array $data
-     * @param bool  $replace
-     * @return array
-     */
-    final protected function _buildInsert(array $data, bool $replace = false)
-    {
-        $this->__lastPrepareSql  = ($replace ? 'REPLACE' : 'INSERT') . ' INTO `' . $this->_tableName . '` (';
-        $fields                  = $placeholder = '';
-        $this->__lastPrepareData = [];
-        foreach ($data as $k => $v) {
-            if (in_array($k, array_keys($this->_tableSchema['columns']))) {
-                $fields                            .= '`' . $k . '`, ';
-                $placeholder                       .= ':' . $k . ', ';
-                $this->__lastPrepareData[':' . $k] = $v;
-            }
-        }
-        $fields                 = rtrim($fields, ', ');
-        $placeholder            = rtrim($placeholder, ', ');
-        $this->__lastPrepareSql .= $fields . ') VALUES(' . $placeholder . ')';
-        return [
-            'sql'  => $this->__lastPrepareSql,
-            'data' => $this->__lastPrepareData
-        ];
-    }
-
-    /**
      * 批量添加数据
      * @param array $data 要添加的二维数组
      * @param bool  $replace
      * @return array
      */
-    final protected function _buildBatchInsert(array $data, bool $replace = false)
+    final protected function _buildInsert(array $data, bool $replace = false)
     {
         $this->__lastPrepareSql  = ($replace ? 'REPLACE' : 'INSERT') . ' INTO `' . $this->_tableName . '` (';
         $fields                  = [];

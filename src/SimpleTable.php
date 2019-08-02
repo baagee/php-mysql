@@ -93,12 +93,11 @@ final class SimpleTable extends SqlBuilder implements SimpleTableInterface
     final public function insert(array $data, bool $replace = false)
     {
         if (count($data) === count($data, COUNT_RECURSIVE)) {
-            $sqlData = $this->_buildInsert($data, $replace);
-        } else {
-            // 批量插入
-            $sqlData = $this->_buildBatchInsert($data, $replace);
+            $data = [$data];
         }
-        $res = $this->_dbInstance->execute($sqlData['sql'], $sqlData['data']);
+        // 批量插入
+        $sqlData = $this->_buildInsert($data, $replace);
+        $res     = $this->_dbInstance->execute($sqlData['sql'], $sqlData['data']);
         $this->_clear();
         if ($res >= 1) {
             return $this->_dbInstance->getLastInsertId();
