@@ -46,7 +46,11 @@ final class SimpleTable extends SqlBuilder implements SimpleTableInterface
             }
             if ((strpos($v['Type'], 'int') !== false)) {
                 $field_type = self::COLUMN_TYPE_INT;
-            } else if (strpos($v['Type'], 'decimal') !== false) {
+            } else if (
+                strpos($v['Type'], 'decimal') !== false
+                || strpos($v['Type'], 'float') !== false
+                || strpos($v['Type'], 'double') !== false
+            ) {
                 $field_type = self::COLUMN_TYPE_FLOAT;
             } else {
                 $field_type = self::COLUMN_TYPE_STRING;

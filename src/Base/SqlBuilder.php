@@ -8,6 +8,8 @@
 
 namespace BaAGee\MySQL\Base;
 
+use BaAGee\MySQL\Expression;
+
 abstract class SqlBuilder
 {
     protected const COLUMN_TYPE_INT    = 'int';
@@ -99,6 +101,7 @@ abstract class SqlBuilder
      *                           'field4'=>['between',[start,end],'or']
      *                           ]
      * @return static
+     * @throws \Exception
      */
     final public function where(array $conditions)
     {
@@ -109,6 +112,7 @@ abstract class SqlBuilder
      * 多次调用or连接 条件查询
      * @param array $conditions
      * @return static
+     * @throws \Exception
      */
     final public function orWhere(array $conditions)
     {
@@ -118,6 +122,7 @@ abstract class SqlBuilder
     /**
      * @param array $having
      * @return static
+     * @throws \Exception
      */
     final public function having(array $having)
     {
@@ -127,7 +132,8 @@ abstract class SqlBuilder
     /**
      * 两个having 之间or连接
      * @param array $having
-     * @return static
+     * @return SqlBuilder
+     * @throws \Exception
      */
     final public function orHaving(array $having)
     {
@@ -135,10 +141,11 @@ abstract class SqlBuilder
     }
 
     /**
-     * @param      $conditions
-     * @param bool $is_and
-     * @param bool $is_having
-     * @return static
+     * @param array $conditions
+     * @param bool  $is_and
+     * @param bool  $is_having
+     * @return $this
+     * @throws \Exception
      */
     private function whereOrHaving(array $conditions, bool $is_and = true, bool $is_having = false)
     {
@@ -275,8 +282,12 @@ abstract class SqlBuilder
                     if (!in_array($k, $fields)) {
                         $fields[] = $k;
                     }
-                    $z                                            .= ':' . $k . '_' . $i . ', ';
-                    $this->__lastPrepareData[':' . $k . '_' . $i] = $v;
+                    if ($v instanceof Expression) {
+                        $z .= sprintf('%s, ', $v);
+                    } else {
+                        $z                                            .= ':' . $k . '_' . $i . ', ';
+                        $this->__lastPrepareData[':' . $k . '_' . $i] = $v;
+                    }
                 }
             }
             $zz .= rtrim($z, ', ') . '),';
@@ -317,8 +328,12 @@ abstract class SqlBuilder
         $this->__lastPrepareSql = 'UPDATE `' . $this->_tableName . '` SET ';
         foreach ($data as $field => $value) {
             if (in_array($field, array_keys($this->_tableSchema['columns']))) {
-                $this->__lastPrepareSql                .= '`' . $field . '` = :' . $field . ', ';
-                $this->__lastPrepareData[':' . $field] = $value;
+                if ($value instanceof Expression) {
+                    $this->__lastPrepareSql .= sprintf('`' . $field . '` = %s, ', $value);
+                } else {
+                    $this->__lastPrepareSql                .= '`' . $field . '` = :' . $field . ', ';
+                    $this->__lastPrepareData[':' . $field] = $value;
+                }
             }
         }
         $this->__lastPrepareSql = rtrim($this->__lastPrepareSql, ', ');
@@ -353,67 +368,72 @@ abstract class SqlBuilder
     }
 
     /**
-     * @param        $field
+     * @param string $field
      * @param        $condition
      * @param string $op
      * @param bool   $having
      * @return string
+     * @throws \Exception
      */
-    private function createSingleCondition(string $field, array $condition, string $op = 'AND', bool $having = false)
+    private function createSingleCondition(string $field, $condition, string $op = 'AND', bool $having = false)
     {
         $conditionString = '';
         $k               = trim($field, '`');
-
         if ($having == true || ($having == false && in_array($k, array_keys($this->_tableSchema['columns'])))) {
-            if ($having) {
-                $z_k = '_h_' . $k . '_' . uniqid();
-            } else {
-                $z_k = '_w_' . $k . '_' . uniqid();
-            }
-            $w  = strtoupper(trim($condition[0]));
-            $vv = $condition[1];
-            if (strpos($w, 'BETWEEN') !== false) {
-                // between
-                $conditionString .= ' `' . $k . '` BETWEEN :' . $z_k . '_min AND :' . $z_k . '_max ' . $op;
-                // $conditionString .= ' (`' . $k . '` BETWEEN :' . $z_k . '_min AND :' . $z_k . '_max) ' . $op;
-                if (($this->_tableSchema['columns'][$k] ?? '') === self::COLUMN_TYPE_INT) {
-                    $vv[0] = intval($vv[0]);
-                    $vv[1] = intval($vv[1]);
-                } elseif (($this->_tableSchema['columns'][$k] ?? '') === self::COLUMN_TYPE_FLOAT) {
-                    $vv[0] = floatval($vv[0]);
-                    $vv[1] = floatval($vv[1]);
+            if ($condition instanceof Expression) {
+                $conditionString .= sprintf(' `%s` %s ', $k, $condition, $op);
+            } elseif (is_array($condition)) {
+                if ($having) {
+                    $z_k = '_h_' . $k . '_' . uniqid();
                 } else {
-                    $vv[0] = strval($vv[0]);
-                    $vv[1] = strval($vv[1]);
+                    $z_k = '_w_' . $k . '_' . uniqid();
                 }
-                $this->__lastPrepareData[':' . $z_k . '_min'] = $vv[0];
-                $this->__lastPrepareData[':' . $z_k . '_max'] = $vv[1];
-            } else if (strpos($w, 'IN') !== false) {
-                // in 不能用参数绑定，预处理
-                $ppp = '';
-                $vv  = array_unique($vv);
-                foreach ($vv as $var) {
+                $w  = strtoupper(trim($condition[0]));
+                $vv = $condition[1];
+                if (strpos($w, 'BETWEEN') !== false) {
+                    // between
+                    $conditionString .= ' `' . $k . '` BETWEEN :' . $z_k . '_min AND :' . $z_k . '_max ' . $op;
+                    // $conditionString .= ' (`' . $k . '` BETWEEN :' . $z_k . '_min AND :' . $z_k . '_max) ' . $op;
                     if (($this->_tableSchema['columns'][$k] ?? '') === self::COLUMN_TYPE_INT) {
-                        $ppp .= intval($var) . ',';
+                        $vv[0] = intval($vv[0]);
+                        $vv[1] = intval($vv[1]);
+                    } elseif (($this->_tableSchema['columns'][$k] ?? '') === self::COLUMN_TYPE_FLOAT) {
+                        $vv[0] = floatval($vv[0]);
+                        $vv[1] = floatval($vv[1]);
                     } else {
-                        $ppp .= '\'' . strval($var) . '\',';
+                        $vv[0] = strval($vv[0]);
+                        $vv[1] = strval($vv[1]);
                     }
-                }
-                $conditionString .= ' `' . $k . '` in (' . rtrim($ppp, ',') . ') ' . $op;
-                // $conditionString .= ' (`' . $k . '` in (' . rtrim($ppp, ',') . ')) ' . $op;
-            } else {
-                // > < != = like %112233% intval => 0
-                $conditionString .= ' `' . $k . '` ' . $w . ' :' . $z_k . ' ' . $op;
-                // $conditionString .= ' (`' . $k . '` ' . $w . ' :' . $z_k . ') ' . $op;
-                if (($this->_tableSchema['columns'][$k] ?? '') === self::COLUMN_TYPE_INT) {
-                    $vv = $w === 'LIKE' ? strval($vv) : intval($vv);
-                } elseif (($this->_tableSchema['columns'][$k] ?? '') === self::COLUMN_TYPE_FLOAT) {
-                    $vv = floatval($vv);
+                    $this->__lastPrepareData[':' . $z_k . '_min'] = $vv[0];
+                    $this->__lastPrepareData[':' . $z_k . '_max'] = $vv[1];
+                } else if (strpos($w, 'IN') !== false) {
+                    // in 不能用参数绑定，预处理
+                    $ppp = '';
+                    $vv  = array_unique($vv);
+                    foreach ($vv as $var) {
+                        if (($this->_tableSchema['columns'][$k] ?? '') === self::COLUMN_TYPE_INT) {
+                            $ppp .= intval($var) . ',';
+                        } else {
+                            $ppp .= '\'' . strval($var) . '\',';
+                        }
+                    }
+                    $conditionString .= ' `' . $k . '` in (' . rtrim($ppp, ',') . ') ' . $op;
+                    // $conditionString .= ' (`' . $k . '` in (' . rtrim($ppp, ',') . ')) ' . $op;
                 } else {
-                    $vv = strval($vv);
+                    // > < != = like %112233% intval => 0
+                    $conditionString .= ' `' . $k . '` ' . $w . ' :' . $z_k . ' ' . $op;
+                    // $conditionString .= ' (`' . $k . '` ' . $w . ' :' . $z_k . ') ' . $op;
+                    if (($this->_tableSchema['columns'][$k] ?? '') === self::COLUMN_TYPE_INT) {
+                        $vv = $w === 'LIKE' ? strval($vv) : intval($vv);
+                    } elseif (($this->_tableSchema['columns'][$k] ?? '') === self::COLUMN_TYPE_FLOAT) {
+                        $vv = floatval($vv);
+                    } else {
+                        $vv = strval($vv);
+                    }
+                    $this->__lastPrepareData[':' . $z_k] = $vv;
                 }
-
-                $this->__lastPrepareData[':' . $z_k] = $vv;
+            } else {
+                throw new \Exception('条件格式不合法');
             }
         }
         return $conditionString;
@@ -423,6 +443,7 @@ abstract class SqlBuilder
      * @param array $conditions
      * @param bool  $having
      * @return string
+     * @throws \Exception
      */
     private function buildConditions(array $conditions, $having = false)
     {
@@ -446,6 +467,8 @@ abstract class SqlBuilder
             if (is_integer($key) && is_array($conditions[$key])) {
                 $str    = trim($this->buildConditions($conditions[$key], $having), 'AND OR');
                 $conStr .= ' (' . $str . ') ' . $op;
+            } elseif (is_integer($key) && $conditions[$key] instanceof Expression) {
+                $conStr .= sprintf(' (%s) %s', $conditions[$key], $op);
             } elseif (is_string($key)) {
                 // $conStr .= sprintf(' (%s %s %s) %s', $key, $conditions[$key][0], $conditions[$key][1], $op);
                 $conStr .= $this->createSingleCondition($key, $conditions[$key], $op, $having);

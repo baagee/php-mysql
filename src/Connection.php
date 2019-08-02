@@ -53,8 +53,8 @@ final class Connection
      */
     private static function getPdoObject(array $config, $retryTimes = 0)
     {
-        if (isset($config['connect_timeout'])) {
-            $connect_timeout = intval($config['connect_timeout']) == 0 ? 2 : intval($config['connect_timeout']);
+        if (isset($config['connectTimeout'])) {
+            $connect_timeout = intval($config['connectTimeout']) == 0 ? 2 : intval($config['connectTimeout']);
         } else {
             $connect_timeout = 2;
         }

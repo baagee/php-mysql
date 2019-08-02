@@ -6,9 +6,10 @@
  * Time: 20:39
  */
 
-// include __DIR__ . '/../vendor/autoload.php';
+include __DIR__ . '/../vendor/autoload.php';
 
 use  BaAGee\MySQL\SimpleTable;
+use BaAGee\MySQL\Expression;
 
 
 class sqlBuilderTest extends \PHPUnit\Framework\TestCase
@@ -77,13 +78,22 @@ class sqlBuilderTest extends \PHPUnit\Framework\TestCase
         $res = $this->simpleTable->where(['id' => ['=', mt_rand(300, 590)]])->update(['student_name' => '哈哈哈' . mt_rand(0, 99)]);
         echo "SQL:" . $this->db->getLastSql();
         var_dump($res);
+
+        $res = $this->simpleTable->where([
+            'id' => ['=', mt_rand(390, 600)]
+        ])->update([
+            'english' => (new Expression('english + 1')),
+            'math'    => (new Expression('math - 1')),
+        ]);
+        var_dump('递增递减结果：', $res);
+        echo 'SQL:' . $this->db->getLastSql() . PHP_EOL;
         $this->assertNotEmpty('$res');
     }
 
     public function testTableSelect()
     {
         $this->start();
-        $res = $this->simpleTable->fields(['*'])->where(['id' => ['=', mt_rand(300, 590)]])->where(['sex' => ['=', 0]])
+        $res = $this->simpleTable->where(['id' => ['=', mt_rand(300, 590)]])->where(['sex' => ['=', 0]])
             ->having(['id' => ['<', 10]])->having(['age' => ['<', 20]])
             ->fields(['distinct `age`', 'sex'])->select(true);
         echo "SQL:" . $this->db->getLastSql();
@@ -104,7 +114,7 @@ class sqlBuilderTest extends \PHPUnit\Framework\TestCase
                 'or',
                 [
                     'sex' => ['=', 0],
-                    'age' => ['<', 19],
+                    'age' => ['<', '19'],
                     'or',
                     [
                         'sex' => ['=', 0],
@@ -113,8 +123,11 @@ class sqlBuilderTest extends \PHPUnit\Framework\TestCase
                         [
                             'sex' => ['=', 0],
                             'age' => ['<', 19]
-                        ]
-                    ]
+                        ],
+                        (new Expression('id % 2 = 0'))
+                    ],
+                    'or',
+                    (new Expression('id % 2 = 0'))
                 ]
             ]
         ])->orWhere([
@@ -125,7 +138,8 @@ class sqlBuilderTest extends \PHPUnit\Framework\TestCase
 
         $res = $this->simpleTable->fields([
             'avg(chinese)', 'class_id', 'min(`age`)', 'max(math)', 'sum(biology)', 'count(student_id)'
-        ])->where(['id' => ['>', mt_rand(300, 590)]])->groupBy('class_id')->orderBy(['class_id' => 'desc'])->limit(0, 7)->select();
+        ])->where(['id' => ['>', mt_rand(300, 590)]])->groupBy('class_id')->orderBy(['class_id' => 'desc'])
+            ->limit(0, 7)->lockForUpdate()->select();
         echo "SQL:" . $this->db->getLastSql();
         // var_dump($res);
 
@@ -135,9 +149,10 @@ class sqlBuilderTest extends \PHPUnit\Framework\TestCase
             'class_id' => ['between', [1, 5]],
             'sex'      => ['=', 1],
         ])->orWhere([
-            'math'    => ['>', 60],
-            'english' => ['<', 60],
-            // 'or',
+            'math'         => ['>', 60],
+            'english'      => ['<', 60],
+            'or',
+            'student_name' => new Expression('like \'%哈%\'')
         ])->having(['`cid`' => ['>', 3]])->orHaving([
             'cid'  => ['<', 2],
             'or',
@@ -151,9 +166,11 @@ class sqlBuilderTest extends \PHPUnit\Framework\TestCase
                 ]
             ],
             'math' => ['>', 60]
-        ])->limit(0, 2)->orderBy(['age' => 'desc', 'student_id' => 'asc'])
+        ])->limit(2)->orderBy(['age' => 'desc', 'student_id' => 'asc'])
             ->groupBy('student_id')->groupBy('math')->lockInShareMode()->select();
         echo "SQL:" . $this->db->getLastSql();
+        $this->simpleTable->where(['id' => ['<', 400]])->limit(1)->select();
+        $this->simpleTable->fields(['*'])->where(['id' => ['<', 400]])->limit(1)->select();
         $this->assertNotEmpty('$res');
     }
 
@@ -219,6 +236,16 @@ class sqlBuilderTest extends \PHPUnit\Framework\TestCase
         $db->beginTransaction();
         try {
             $this->transactionTest($db);
+
+            $db->beginTransaction();
+            try {
+                $this->transactionTest($db);
+                $db->commit();
+                echo '内部事务成功' . PHP_EOL;
+            } catch (Exception $e) {
+                $db->rollback();
+                echo "内部事务Error:" . $e->getMessage() . PHP_EOL;
+            }
             $db->commit();
             echo '事务成功' . PHP_EOL;
         } catch (Exception $e) {
@@ -228,6 +255,16 @@ class sqlBuilderTest extends \PHPUnit\Framework\TestCase
 
         /*测试事务2*/
         $res = \BaAGee\MySQL\DB::transaction(function () use ($db) {
+            $db->beginTransaction();
+            try {
+                $this->transactionTest($db);
+                throw new Exception('内部事务2故意失败');
+                $db->commit();
+                echo '内部事务成功' . PHP_EOL;
+            } catch (Exception $e) {
+                $db->rollback();
+                echo "内部事务Error:" . $e->getMessage() . PHP_EOL;
+            }
             return $this->transactionTest($db);
         }, [$db]);
         var_dump('测试事务2 结果：' . ($res ? 'ok' : 'error'));
@@ -278,7 +315,7 @@ class sqlBuilderTest extends \PHPUnit\Framework\TestCase
             'student_id'   => intval(microtime(true) * 1000) + mt_rand(1000000, 9999999),
             'chinese'      => mt_rand(40, 100),
             'english'      => mt_rand(45, 100),
-            'math'         => mt_rand(30, 100),
+            'math'         => new Expression(mt_rand(30, 100)),
             'biology'      => mt_rand(47, 98),
             'history'      => mt_rand(53, 100),
             'class_id'     => mt_rand(1, 10),

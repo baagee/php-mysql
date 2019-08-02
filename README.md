@@ -158,7 +158,8 @@ $res = $builder->fields([
 ])->orWhere([
     'math'    => ['>', 60],
     'english' => ['<', 60],
-    // 'or',
+    'or',
+    (new Expression('id % 2 = 0'))
 ])->having(['`cid`' => ['>', 3]])->orHaving([
     'cid'  => ['<', 2],
     // 'or',
@@ -173,6 +174,14 @@ var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
 $res = $builder->where(['id' => ['=', mt_rand(300, 590)]])->update(['student_name' => '哈哈哈' . mt_rand(0, 99)]);
 var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
 var_dump($res);
+// 递增递减
+$res=$builder->where([
+    'id' => ['=', mt_rand(390, 600)]
+])->update([
+    // 使用表达式
+    'english' => (new Expression('english + 1')),
+    'math'    => (new Expression('math - 1')),
+]);
 
 /*删除测试*/
 $res = $builder->where(['id' => ['=', mt_rand(300, 590)]])->delete();
