@@ -46,7 +46,11 @@ final class SimpleTable extends SqlBuilder implements SimpleTableInterface
             }
             if ((strpos($v['Type'], 'int') !== false)) {
                 $field_type = self::COLUMN_TYPE_INT;
-            } else if (strpos($v['Type'], 'decimal') !== false) {
+            } else if (
+                strpos($v['Type'], 'decimal') !== false
+                || strpos($v['Type'], 'float') !== false
+                || strpos($v['Type'], 'double') !== false
+            ) {
                 $field_type = self::COLUMN_TYPE_FLOAT;
             } else {
                 $field_type = self::COLUMN_TYPE_STRING;
@@ -92,30 +96,15 @@ final class SimpleTable extends SqlBuilder implements SimpleTableInterface
      */
     final public function insert(array $data, bool $replace = false)
     {
+        if (count($data) === count($data, COUNT_RECURSIVE)) {
+            $data = [$data];
+        }
+        // 批量插入
         $sqlData = $this->_buildInsert($data, $replace);
         $res     = $this->_dbInstance->execute($sqlData['sql'], $sqlData['data']);
         $this->_clear();
-        if ($res == 1) {
+        if ($res >= 1) {
             return $this->_dbInstance->getLastInsertId();
-        } else {
-            return null;
-        }
-    }
-
-    /**
-     * 批量插入
-     * @param array $rows
-     * @param bool  $replace
-     * @return int|null
-     * @throws \Exception
-     */
-    final public function batchInsert(array $rows, bool $replace = false)
-    {
-        $sqlData = $this->_buildBatchInsert($rows, $replace);
-        $res     = $this->_dbInstance->execute($sqlData['sql'], $sqlData['data']);
-        $this->_clear();
-        if ($res > 0) {
-            return $res;
         } else {
             return null;
         }

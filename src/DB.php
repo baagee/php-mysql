@@ -113,8 +113,14 @@ final class DB extends DBAbstract implements DBInterface
             }
         } catch (\Exception $e) {
             // 重试三次
-            if ($this->isBreak($e) && $retryTimes < 3) {
-                self::close($isRead);
+            if ($isRead) {
+                //读操作获取对应从库配置
+                $rtc = DBConfig::get('slave')[Connection::getSlaveId()];
+            } else {
+                $rtc = DBConfig::get();
+            }
+            if ($this->isBreak($e) && $retryTimes < ($rtc['retryTimes'] ?? 3)) {
+                self::closeConnection($isRead);
                 $retryTimes++;
                 $this->runSql($isRead, $sql, $data, $retryTimes);
             }

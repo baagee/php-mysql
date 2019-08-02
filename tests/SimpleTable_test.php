@@ -8,6 +8,7 @@
 include __DIR__ . '/../vendor/autoload.php';
 
 use  BaAGee\MySQL\SimpleTable;
+use BaAGee\MySQL\Expression;
 
 
 $config = include __DIR__ . '/config.php';
@@ -28,21 +29,24 @@ $rows = [];
 for ($i = 0; $i < 3; $i++) {
     $rows[] = createStudentScoreRow();
 }
-$res = $builder->batchInsert($rows, true);
+$res = $builder->insert($rows, true);
 var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
 var_dump($res);
 
 /*查询测试*/
 $res = $builder->fields([
-    'student_name', 'student_id', 'chinese', 'english', 'math', 'biology', 'history', 'class_id', 'age', 'sex'
+    'id', 'student_name', 'student_id', 'chinese', 'english', 'math', 'biology', 'history', 'class_id', 'age', 'sex'
 ])->where([
-    'history'  => ['>', '60', 'or'],
-    'class_id' => ['in', [1, 2, 3, 4]]
+    'history'  => ['>', '60'],
+    'class_id' => ['in', [1, 2, 3, 4]],
+    'or',
+    (new Expression('id % 2 = 0'))
 ])->where([
     'age' => ['=', 18]
 ])->orderBy(['id' => 'desc'])->limit(0, 2)->groupBy('student_name')->lockInShareMode()->select(false);
 var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
 // var_dump($res);
+// die;
 
 $res = $builder->fields([
     'avg(chinese)', 'class_id', 'min(`age`)', 'max(math)', 'sum(biology)', 'count(student_id)'
