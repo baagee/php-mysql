@@ -91,6 +91,14 @@ class mainTest extends \PHPUnit\Framework\TestCase
         $this->assertNotEmpty('$res');
     }
 
+    public function test4()
+    {
+        \BaAGee\MySQL\Connection::close();
+        $slaveId = \BaAGee\MySQL\Connection::getSlaveId();
+        var_dump($slaveId);
+        $this->assertNotEmpty('dsgds');
+    }
+
     public function testTableSelect()
     {
         $this->start();
