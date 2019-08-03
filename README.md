@@ -28,12 +28,12 @@ for ($i = 0; $i < 5; $i++) {
     $res = $db->execute($sql, createStudentScoreRow());
     var_dump($res);
     var_dump($db1->getLastInsertId());
-    var_dump($db->getLastSql());
+    var_dump(\BaAGee\MySQL\SqlRecorder::getLastSql());
 }
 /*查询测试*/
 $list = $db->query('select * from student_score where id >? order by id desc limit 2', [mt_rand(10, 100)]);
 var_dump($list);
-var_dump($db->getLastSql());
+var_dump(\BaAGee\MySQL\SqlRecorder::getLastSql());
 
 // 当一次查询数据量大时可以使用yield 返回生成器
 $list = $db->yieldQuery('select * from student_score where id>:id', ['id' => 0]);
@@ -41,7 +41,7 @@ var_dump($list);
 foreach ($list as $i => $item) {
     var_dump($item);
 }
-var_dump($db->getLastSql());
+var_dump(\BaAGee\MySQL\SqlRecorder::getLastSql());
 
 /*测试事务1*/
 $db->beginTransaction();
@@ -64,14 +64,14 @@ function transactionTest(\BaAGee\MySQL\DB $db)
 (null ,:user_id,:title,:content,:tag,:create_time)';
     $userData = createArticleRow();
     $db->execute($sql, $userData);
-    var_dump($db->getLastSql());
+    var_dump(\BaAGee\MySQL\SqlRecorder::getLastSql());
 
     $sql        = 'update student_score set english=? where id = ?';
     $updateData = [mt_rand(30, 100), 330];
 
     // throw new Exception('发生失误');
     $db->execute($sql, $updateData);
-    var_dump($db->getLastSql());
+    var_dump(\BaAGee\MySQL\SqlRecorder::getLastSql());
 
     return true;
 }
@@ -97,7 +97,7 @@ $builder = SimpleTable::getInstance('student_score');
 
 /*插入测试*/
 $res = $builder->insert(createStudentScoreRow(), true);
-var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
+var_dump(\BaAGee\MySQL\SqlRecorder::getLastSql());
 var_dump($res);
 
 /*批量插入测试*/
@@ -106,7 +106,7 @@ for ($i = 0; $i < 3; $i++) {
     $rows[] = createStudentScoreRow();
 }
 $res = $builder->insert($rows, true);
-var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
+var_dump(\BaAGee\MySQL\DB::getLastSql());
 var_dump($res);
 
 /*查询测试 多条件嵌套*/
@@ -141,13 +141,13 @@ $res = $builder->fields([
 ])->orWhere([
     'age' => ['=', 18]
 ])->orderBy(['id' => 'desc'])->limit(0, 2)->groupBy('student_name')->lockInShareMode()->select(false);
-var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
+var_dump(\BaAGee\MySQL\DB::getLastSql());
 // var_dump($res);
 
 $res = $builder->fields([
     'avg(chinese)', 'class_id', 'min(`age`)', 'max(math)', 'sum(biology)', 'count(student_id)'
 ])->where(['id' => ['>', mt_rand(300, 590)]])->groupBy('class_id')->orderBy(['class_id' => 'desc'])->limit(0, 7)->select();
-var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
+var_dump(\BaAGee\MySQL\DB::getLastSql());
 // var_dump($res);
 
 $res = $builder->fields([
@@ -166,13 +166,13 @@ $res = $builder->fields([
     'math' => ['>', 60]
 ])->limit(0, 2)->orderBy(['age' => 'desc', 'student_id' => 'asc'])
     ->groupBy('student_id')->groupBy('math')->lockInShareMode()->select();
-var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
+var_dump(\BaAGee\MySQL\DB::getLastSql());
 // var_dump($res);
 // die;
 
 /*更新测试*/
 $res = $builder->where(['id' => ['=', mt_rand(300, 590)]])->update(['student_name' => '哈哈哈' . mt_rand(0, 99)]);
-var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
+var_dump(\BaAGee\MySQL\DB::getLastSql());
 var_dump($res);
 // 递增递减
 $res=$builder->where([
@@ -185,17 +185,17 @@ $res=$builder->where([
 
 /*删除测试*/
 $res = $builder->where(['id' => ['=', mt_rand(300, 590)]])->delete();
-var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
+var_dump(\BaAGee\MySQL\DB::getLastSql());
 var_dump($res);
 
 // 查询
 $res = $builder->where(['id' => ['=', mt_rand(300, 590)]])->fields(['distinct `age`', 'sex'])->select();
-var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
+var_dump(\BaAGee\MySQL\DB::getLastSql());
 var_dump($res);
 
 $article = SimpleTable::getInstance('article');
 $res     = $article->insert(createArticleRow());
-var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
+var_dump(\BaAGee\MySQL\DB::getLastSql());
 var_dump($res);
 //
 // $article->where(['id' => ['>', 20]]);

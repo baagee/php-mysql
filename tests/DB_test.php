@@ -7,6 +7,8 @@
  */
 include __DIR__ . '/../vendor/autoload.php';
 
+use BaAGee\MySQL\DB;
+
 $config = include __DIR__ . '/config.php';
 
 /*DB测试*/
@@ -24,12 +26,12 @@ for ($i = 0; $i < 5; $i++) {
     $res = $db->execute($sql, createStudentScoreRow());
     var_dump($res);
     var_dump($db1->getLastInsertId());
-    var_dump($db->getLastSql());
+    var_dump(DB::getLastSql());
 }
 /*查询测试*/
 $list = $db->query('select * from student_score where id >? order by id desc limit 2', [mt_rand(10, 100)]);
 var_dump($list);
-var_dump($db->getLastSql());
+var_dump(DB::getLastSql());
 
 // 当一次查询数据量大时可以使用yield 返回生成器
 $list = $db->yieldQuery('select * from student_score where id>:id', ['id' => 0]);
@@ -37,7 +39,7 @@ var_dump($list);
 foreach ($list as $i => $item) {
     var_dump($item);
 }
-var_dump($db->getLastSql());
+var_dump(DB::getLastSql());
 
 /*测试事务1*/
 $db->beginTransaction();
@@ -60,20 +62,17 @@ function transactionTest(\BaAGee\MySQL\DB $db)
 (null ,:user_id,:title,:content,:tag,:create_time)';
     $userData = createArticleRow();
     $db->execute($sql, $userData);
-    var_dump($db->getLastSql());
+    var_dump(DB::getLastSql());
 
     $sql        = 'update student_score set english=? where id = ?';
     $updateData = [mt_rand(30, 100), 330];
 
     // throw new Exception('发生失误');
     $db->execute($sql, $updateData);
-    var_dump($db->getLastSql());
+    var_dump(DB::getLastSql());
 
     return true;
 }
-
-var_dump($db->getLastPrepareSql());
-var_dump($db->getLastPrepareData());
 
 echo 'OVER' . PHP_EOL;
 

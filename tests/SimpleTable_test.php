@@ -21,7 +21,7 @@ $builder = SimpleTable::getInstance('student_score');
 
 /*插入测试*/
 $res = $builder->insert(createStudentScoreRow(), true);
-var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
+var_dump(\BaAGee\MySQL\DB::getLastSql());
 var_dump($res);
 
 /*批量插入测试*/
@@ -30,7 +30,7 @@ for ($i = 0; $i < 3; $i++) {
     $rows[] = createStudentScoreRow();
 }
 $res = $builder->insert($rows, true);
-var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
+var_dump(\BaAGee\MySQL\DB::getLastSql());
 var_dump($res);
 
 /*查询测试*/
@@ -44,14 +44,14 @@ $res = $builder->fields([
 ])->where([
     'age' => ['=', 18]
 ])->orderBy(['id' => 'desc'])->limit(0, 2)->groupBy('student_name')->lockInShareMode()->select(false);
-var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
+var_dump(\BaAGee\MySQL\SqlRecorder::getLastSql());
 // var_dump($res);
 // die;
 
 $res = $builder->fields([
     'avg(chinese)', 'class_id', 'min(`age`)', 'max(math)', 'sum(biology)', 'count(student_id)'
 ])->where(['id' => ['>', mt_rand(300, 590)]])->groupBy('class_id')->orderBy(['class_id' => 'desc'])->limit(0, 7)->select();
-var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
+var_dump(\BaAGee\MySQL\SqlRecorder::getLastSql());
 // var_dump($res);
 
 $res = $builder->fields([
@@ -66,26 +66,26 @@ $res = $builder->fields([
     'cid' => ['<', 2]
 ])->limit(0, 2)->orderBy(['age' => 'desc', 'student_id' => 'asc'])
     ->groupBy('student_id')->groupBy('math')->lockInShareMode()->select();
-var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
+var_dump(\BaAGee\MySQL\DB::getLastSql());
 // var_dump($res);
 // die;
 
 /*更新测试*/
-var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
+var_dump(\BaAGee\MySQL\DB::getLastSql());
 var_dump($res);
 
 $res = $builder->where(['id' => ['=', mt_rand(300, 590)]])->update(['student_name' => '哈哈哈' . mt_rand(0, 99)]);
-var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
+var_dump(\BaAGee\MySQL\DB::getLastSql());
 var_dump($res);
 
 /*删除测试*/
 $res = $builder->where(['id' => ['=', mt_rand(300, 590)]])->delete();
-var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
+var_dump(\BaAGee\MySQL\DB::getLastSql());
 var_dump($res);
 
 $article = SimpleTable::getInstance('article');
 $res     = $article->insert(createArticleRow());
-var_dump(\BaAGee\MySQL\DB::getInstance()->getLastSql());
+var_dump(\BaAGee\MySQL\SqlRecorder::getLastSql());
 var_dump($res);
 
 
