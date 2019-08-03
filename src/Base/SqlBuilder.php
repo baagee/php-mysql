@@ -292,7 +292,7 @@ abstract class SqlBuilder
             }
             $zz .= rtrim($z, ', ') . '),';
         }
-        $fields                 = implode(', ', $fields);
+        $fields                 = sprintf('`%s`', implode('`, `', $fields));
         $this->__lastPrepareSql .= $fields;
         $this->__lastPrepareSql = rtrim($this->__lastPrepareSql, ', ') . ') VALUES ' . rtrim($zz, ',');
         return [

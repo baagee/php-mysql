@@ -15,7 +15,7 @@ interface DBInterface
 
     public function getLastInsertId();
 
-    public function getLastSql();
+    public static function getLastSql();
 
     public function beginTransaction();
 

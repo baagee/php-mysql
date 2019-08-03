@@ -118,12 +118,18 @@ final class Connection
      * @param bool $isRead
      * @return bool
      */
-    final public static function close(bool $isRead)
+    final public static function close(bool $isRead = true)
     {
-        if ($isRead) {
-            unset(self::$_instance['slave']);
+        if (!isset(self::$config['slave'])) {
+            // 没有配置从库 忽略参数 全删除
+            unset(self::$_instance['slave'], self::$_instance['master']);
         } else {
-            unset(self::$_instance['master']);
+            // 配置了主从
+            if ($isRead) {
+                unset(self::$_instance['slave']);
+            } else {
+                unset(self::$_instance['master']);
+            }
         }
         return true;
     }
