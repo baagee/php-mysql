@@ -81,7 +81,9 @@ class mainTest extends \PHPUnit\Framework\TestCase
         var_dump($res);
 
         $res = $this->simpleTable->where([
-            'id' => ['=', mt_rand(390, 600)]
+            'id'   => ['=', mt_rand(390, 600)],
+            'or',
+            'math' => ['between', [90.2, 99.9]]
         ])->update([
             'english' => (new Expression('english + 1')),
             'math'    => (new Expression('math - 1')),
