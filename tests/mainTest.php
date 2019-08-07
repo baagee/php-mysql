@@ -26,14 +26,14 @@ class mainTest extends \PHPUnit\Framework\TestCase
      */
     protected $db = null;
 
-    public function __construct(?string $name = null, array $data = [], string $dataName = '')
+    public function setUp()
     {
-        parent::__construct($name, $data, $dataName);
-        $this->config = include __DIR__ . '/config.php';
+        $this->start();
     }
 
     public function start()
     {
+        $this->config = include __DIR__ . '/config.php';
         \BaAGee\MySQL\DBConfig::init($this->config);
         $this->simpleTable = SimpleTable::getInstance('student_score');
         $this->db          = \BaAGee\MySQL\DB::getInstance();
@@ -41,7 +41,6 @@ class mainTest extends \PHPUnit\Framework\TestCase
 
     public function testTableInsert()
     {
-        $this->start();
         /*插入测试*/
         $res = $this->simpleTable->insert($this->createStudentScoreRow(), true, $this->createStudentScoreRow());
         echo "SQL:" . DB::getLastSql();
@@ -52,7 +51,6 @@ class mainTest extends \PHPUnit\Framework\TestCase
 
     public function testBatchTableInsert()
     {
-        $this->start();
         /*批量插入测试*/
         $rows = [];
         for ($i = 0; $i < 3; $i++) {
@@ -68,7 +66,6 @@ class mainTest extends \PHPUnit\Framework\TestCase
 
     public function testTableDelete()
     {
-        $this->start();
         /*删除测试*/
         $res = $this->simpleTable->where(['id' => ['=', mt_rand(300, 590)]])->delete();
         echo "SQL:" . DB::getLastSql();
@@ -78,7 +75,6 @@ class mainTest extends \PHPUnit\Framework\TestCase
 
     public function testTableUpdate()
     {
-        $this->start();
         /*更新测试*/
         $res = $this->simpleTable->where(['id' => ['=', mt_rand(300, 590)]])->update(['student_name' => '哈哈哈' . mt_rand(0, 99)]);
         echo "SQL:" . DB::getLastSql();
@@ -99,7 +95,6 @@ class mainTest extends \PHPUnit\Framework\TestCase
 
     public function testReplace()
     {
-        $this->start();
         /*批量插入测试*/
         $rows = [];
         for ($i = 0; $i < 3; $i++) {
@@ -123,7 +118,6 @@ class mainTest extends \PHPUnit\Framework\TestCase
 
     public function testTableSelect()
     {
-        $this->start();
         $res = $this->simpleTable->where(['id' => ['=', mt_rand(300, 590)]])->where(['sex' => ['=', 0]])
             ->having(['id' => ['<', 10]])->having(['age' => ['<', 20]])
             ->fields(['distinct `age`', 'sex'])->select(true);
@@ -207,7 +201,6 @@ class mainTest extends \PHPUnit\Framework\TestCase
 
     public function test2()
     {
-        $this->start();
         $db = \BaAGee\MySQL\DB::getInstance();
         $this->assertEquals($db, $this->db);
         /*插入测试*/
@@ -247,7 +240,6 @@ class mainTest extends \PHPUnit\Framework\TestCase
 
     public function test3()
     {
-        $this->start();
         try {
             $sql      = 'INSERT INTO article(id,user_id1,title,content,tag,create_time) values 
 (null ,:user_id,:title,:content,:tag,:create_time)';
@@ -261,7 +253,6 @@ class mainTest extends \PHPUnit\Framework\TestCase
 
     public function testTransaction()
     {
-        $this->start();
         $db = \BaAGee\MySQL\DB::getInstance();
         /*测试事务1*/
         $db->beginTransaction();
