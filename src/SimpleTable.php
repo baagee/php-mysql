@@ -88,19 +88,41 @@ final class SimpleTable extends SqlBuilder implements SimpleTableInterface
     }
 
     /**
-     * 插入数据insert into 或者replace into 返回插入的ID
+     * 插入数据insert into 返回插入的ID
      * @param array $data
-     * @param bool  $replace
+     * @param bool  $ignore
+     * @param array $onDuplicateUpdateFields
      * @return int|null
      * @throws \Exception
      */
-    final public function insert(array $data, bool $replace = false)
+    final public function insert(array $data, bool $ignore = false, array $onDuplicateUpdateFields = [])
     {
         if (count($data) === count($data, COUNT_RECURSIVE)) {
             $data = [$data];
         }
         // 批量插入
-        $sqlData = $this->_buildInsert($data, $replace);
+        $sqlData = $this->_buildInsertOrReplace($data, false, $ignore, $onDuplicateUpdateFields);
+        $res     = $this->_dbInstance->execute($sqlData['sql'], $sqlData['data']);
+        $this->_clear();
+        if ($res >= 1) {
+            return $this->_dbInstance->getLastInsertId();
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * @param array $data
+     * @return int|null
+     * @throws \Exception
+     */
+    final public function replace(array $data)
+    {
+        if (count($data) === count($data, COUNT_RECURSIVE)) {
+            $data = [$data];
+        }
+        // 批量插入
+        $sqlData = $this->_buildInsertOrReplace($data, true, false, []);
         $res     = $this->_dbInstance->execute($sqlData['sql'], $sqlData['data']);
         $this->_clear();
         if ($res >= 1) {

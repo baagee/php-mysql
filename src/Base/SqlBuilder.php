@@ -265,13 +265,17 @@ abstract class SqlBuilder
 
     /**
      * 批量添加数据
-     * @param array $data 要添加的二维数组
-     * @param bool  $replace
+     * @param array $data              要添加的二维数组
+     * @param bool  $replace           是否replace
+     * @param bool  $ignore            是否ignore
+     * @param array $onDuplicateUpdate 唯一键冲突要更新的字段
      * @return array
      */
-    final protected function _buildInsert(array $data, bool $replace = false)
+    final protected function _buildInsertOrReplace(array $data, bool $replace = false, bool $ignore = false, array $onDuplicateUpdate = [])
     {
-        $this->__lastPrepareSql  = ($replace ? 'REPLACE' : 'INSERT') . ' INTO `' . $this->_tableName . '` (';
+        $this->__lastPrepareSql  = ($replace ? 'REPLACE' : 'INSERT') .
+            ((!$replace && $ignore && empty($onDuplicateUpdate)) ? ' IGNORE' : '') .//insert才有可能有IGNORE
+            ' INTO `' . $this->_tableName . '` (';
         $fields                  = [];
         $zz                      = '';
         $this->__lastPrepareData = [];
@@ -295,6 +299,24 @@ abstract class SqlBuilder
         $fields                 = sprintf('`%s`', implode('`, `', $fields));
         $this->__lastPrepareSql .= $fields;
         $this->__lastPrepareSql = rtrim($this->__lastPrepareSql, ', ') . ') VALUES ' . rtrim($zz, ',');
+
+        if (!$replace && !empty($onDuplicateUpdate)) {
+            //插入 并且设置了$onDuplicateUpdate
+            $sub = '';
+            foreach ($onDuplicateUpdate as $field => $value) {
+                if (in_array($field, array_keys($this->_tableSchema['columns']))) {
+                    if ($value instanceof Expression) {
+                        $value .= sprintf('%s, ', $value);
+                    }
+                    $sub                                            .= sprintf('`%s` = :%s_odu, ', $field, $field);
+                    $this->__lastPrepareData[':' . $field . '_odu'] = $value;
+                }
+            }
+
+            $sub                    = rtrim($sub, ', ');
+            $this->__lastPrepareSql .= ' ON DUPLICATE KEY UPDATE ' . $sub;
+        }
+
         return [
             'sql'  => $this->__lastPrepareSql,
             'data' => $this->__lastPrepareData

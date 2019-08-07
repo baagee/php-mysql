@@ -43,6 +43,8 @@ class mainTest extends \PHPUnit\Framework\TestCase
     {
         $this->start();
         /*插入测试*/
+        $res = $this->simpleTable->insert($this->createStudentScoreRow(), true, $this->createStudentScoreRow());
+        echo "SQL:" . DB::getLastSql();
         $res = $this->simpleTable->insert($this->createStudentScoreRow(), true);
         echo "SQL:" . DB::getLastSql();
         $this->assertEquals($res > 0, true);
@@ -57,6 +59,8 @@ class mainTest extends \PHPUnit\Framework\TestCase
             $rows[] = $this->createStudentScoreRow();
         }
         $res = $this->simpleTable->insert($rows, true);
+        echo "SQL:" . DB::getLastSql();
+        $res = $this->simpleTable->insert($rows, false, $this->createStudentScoreRow());
         echo "SQL:" . DB::getLastSql();
         var_dump($res);
         $this->assertNotEmpty('$res');
@@ -90,6 +94,22 @@ class mainTest extends \PHPUnit\Framework\TestCase
         ]);
         var_dump('递增递减结果：', $res);
         echo 'SQL:' . DB::getLastSql() . PHP_EOL;
+        $this->assertNotEmpty('$res');
+    }
+
+    public function testReplace()
+    {
+        $this->start();
+        /*批量插入测试*/
+        $rows = [];
+        for ($i = 0; $i < 3; $i++) {
+            $rows[] = $this->createStudentScoreRow();
+        }
+        $res = $this->simpleTable->replace($rows);
+        echo "SQL:" . DB::getLastSql();
+        $res = $this->simpleTable->replace($this->createStudentScoreRow());
+        echo "SQL:" . DB::getLastSql();
+        var_dump($res);
         $this->assertNotEmpty('$res');
     }
 

@@ -16,5 +16,7 @@ interface SimpleTableInterface
 
     public function delete();
 
-    public function insert(array $data, bool $replace);
+    public function insert(array $data, bool $ignore, array $onDuplicateUpdateFields = []);
+
+    public function replace(array $data);
 }
