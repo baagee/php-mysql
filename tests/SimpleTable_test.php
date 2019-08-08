@@ -5,6 +5,7 @@
  * Date: 2019/7/27
  * Time: 20:39
  */
+$st = microtime(true);
 include __DIR__ . '/../vendor/autoload.php';
 
 use  BaAGee\MySQL\SimpleTable;
@@ -127,3 +128,5 @@ function createStudentName()
     }
     return $b;
 }
+
+echo (microtime(true) - $st) * 1000;

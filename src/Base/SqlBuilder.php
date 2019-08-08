@@ -95,10 +95,10 @@ abstract class SqlBuilder
      * 设置查询条件，可以多次调用 and连接
      * @param array $conditions  条件数组
      *                           [
-     *                           'field1'=>['>|<|!=|=',value,'or'],
-     *                           'field2'=>['like','%like','and'],
-     *                           'field3'=>['[not]in',[1,2,3,4,5],'and']
-     *                           'field4'=>['between',[start,end],'or']
+     *                           'field1'=>['>|<|!=|=',value],
+     *                           'field2'=>['like','%like'],
+     *                           'field3'=>['[not]in',[1,2,3,4,5]]
+     *                           'field4'=>['between',[start,end]]
      *                           ]
      * @return static
      * @throws \Exception
