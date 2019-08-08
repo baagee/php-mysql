@@ -16,4 +16,9 @@
             <directory suffix=".php">src</directory>
         </whitelist>
     </filter>
+
+    <!--这里是日志记录，把覆盖率信息保存到 ./tests/codeCoverage-->
+    <logging>
+        <log type="coverage-html" target="./tests/codeCoverage"/>
+    </logging>
 </phpunit>
