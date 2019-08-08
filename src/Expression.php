@@ -12,7 +12,7 @@ namespace BaAGee\MySQL;
  * Class Expression
  * @package BaAGee\MySQL
  */
-class Expression
+final class Expression
 {
     /**
      * @var string
