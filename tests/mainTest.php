@@ -116,6 +116,18 @@ class mainTest extends \PHPUnit\Framework\TestCase
         $this->assertNotEmpty('dsgds');
     }
 
+    public function testConnection()
+    {
+        // 获取读操作链接
+        $link1 = \BaAGee\MySQL\Connection::getInstance(true);
+        $link2 = \BaAGee\MySQL\Connection::getInstance(true);
+        // 获取写操作链接
+        $link3 = \BaAGee\MySQL\Connection::getInstance(false);
+        $link4 = \BaAGee\MySQL\Connection::getInstance(false);
+        $this->assertEquals($link1, $link2);
+        $this->assertEquals($link3, $link4);
+    }
+
     public function testTableSelect()
     {
         $res = $this->simpleTable->where(['id' => ['=', mt_rand(300, 590)]])->where(['sex' => ['=', 0]])
