@@ -39,7 +39,7 @@ final class SqlRecorder
     public static function getLastSql()
     {
         $end = end(self::$sqlList);
-        return self::replaceSqlData($end['prepareSql'], $end['prepareData']);
+        return self::replaceSqlPlaceholder($end['prepareSql'], $end['prepareData']);
     }
 
     /**
@@ -49,7 +49,7 @@ final class SqlRecorder
     public static function getAllFullSql()
     {
         foreach (self::$sqlList as $itemSqlData) {
-            yield self::replaceSqlData($itemSqlData['prepareSql'], $itemSqlData['prepareData']);
+            yield self::replaceSqlPlaceholder($itemSqlData['prepareSql'], $itemSqlData['prepareData']);
         }
     }
 
@@ -59,7 +59,7 @@ final class SqlRecorder
      * @param array  $prepareData
      * @return mixed|string
      */
-    private static function replaceSqlData(string $prepareSql, $prepareData = [])
+    private static function replaceSqlPlaceholder(string $prepareSql, $prepareData = [])
     {
         $fullSql = $prepareSql;
         if (strpos($fullSql, '?') !== false) {
