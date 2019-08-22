@@ -330,6 +330,7 @@ class mainTest extends \PHPUnit\Framework\TestCase
                 $v['create_time'] = date('Y-m-d H:i:s', $v['create_time']);
             });
         $studentScoreList = $relationObj->getData();
+        var_dump($studentScoreList);
         $this->assertNotEmpty($studentScoreList);
     }
 

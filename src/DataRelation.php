@@ -12,7 +12,7 @@ namespace BaAGee\MySQL;
  * Class OrmRelation
  * @method $this hasOne($leftColumn, $rightTableColumn, $fields = ['*'], $conditions = [], $callback = null);
  * @method $this hasMany($leftColumn, $rightTableColumn, $fields = ['*'], $conditions = [], $callback = null);
- * @package SfLib\Base
+ * @package BaAGee\MySQL
  */
 final class DataRelation
 {
@@ -99,8 +99,8 @@ final class DataRelation
             $conditions = array_merge([
                 $relationConfig['right_column'] => ['in', $columnValues]
             ], (array)($relationConfig['conditions'] ?? []));
-            $tableObj = SimpleTable::getInstance($relationConfig['relation_table']);
-            $list     = $tableObj->fields(self::getFields($relationConfig))->where($conditions)->select(false);
+            $tableObj   = SimpleTable::getInstance($relationConfig['relation_table']);
+            $list       = $tableObj->fields(self::getFields($relationConfig))->where($conditions)->select(false);
         }
         if (empty($list))
             $list = [];
