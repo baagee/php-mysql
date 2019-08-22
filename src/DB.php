@@ -157,10 +157,10 @@ final class DB extends DBAbstract implements DBInterface
      */
     final public function beginTransaction()
     {
-        //设置是事务操作
-        $this->inTransaction = true;
         // 事务操作在主库 is_read=false
         $link = self::getConnection(false);
+        //设置是事务操作
+        $this->inTransaction = true;
         if (!$this->transactionCount++) {
             return $link->beginTransaction();
         }

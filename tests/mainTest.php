@@ -116,6 +116,18 @@ class mainTest extends \PHPUnit\Framework\TestCase
         $this->assertNotEmpty('dsgds');
     }
 
+    public function testConnection()
+    {
+        // 获取读操作链接
+        $link1 = \BaAGee\MySQL\Connection::getInstance(true);
+        $link2 = \BaAGee\MySQL\Connection::getInstance(true);
+        // 获取写操作链接
+        $link3 = \BaAGee\MySQL\Connection::getInstance(false);
+        $link4 = \BaAGee\MySQL\Connection::getInstance(false);
+        $this->assertEquals($link1, $link2);
+        $this->assertEquals($link3, $link4);
+    }
+
     public function testTableSelect()
     {
         $res = $this->simpleTable->where(['id' => ['=', mt_rand(300, 590)]])->where(['sex' => ['=', 0]])
@@ -298,6 +310,28 @@ class mainTest extends \PHPUnit\Framework\TestCase
         var_dump('测试事务3 结果：' . ($res ? 'ok' : 'error'));
 
         $this->assertNotEmpty('ooi');
+    }
+
+    public function testDataRelation()
+    {
+        $studentScoreList = $this->simpleTable->limit(3)->select();
+        $relationObj      = new \BaAGee\MySQL\DataRelation($studentScoreList);
+        $relationObj->hasOne('class_id', 'class_group.id', ['name', 'create_time'], [], function (&$v) {
+            $v['create_time'] = explode(' ', $v['create_time'])[0];
+        })->hasMany('student_id', 'article.user_id', ['tag'], [new \BaAGee\MySQL\Expression('id%2=0')]);
+        $studentScoreList = $relationObj->getData();
+
+        $studentScoreList = $this->simpleTable->limit(1)->select()[0];
+        $relationObj->setData($studentScoreList);
+        $relationObj->hasOne('class_id', 'class_group.id', ['name', 'create_time'], [], function (&$v) {
+            $v['create_time'] = explode(' ', $v['create_time'])[0];
+        })->hasMany('student_id', 'article.user_id', ['tag', 'create_time'], [new \BaAGee\MySQL\Expression('id%2=0')],
+            function (&$v) {
+                $v['create_time'] = date('Y-m-d H:i:s', $v['create_time']);
+            });
+        $studentScoreList = $relationObj->getData();
+        var_dump($studentScoreList);
+        $this->assertNotEmpty($studentScoreList);
     }
 
     public function testGetAllFullSql()
