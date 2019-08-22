@@ -312,6 +312,27 @@ class mainTest extends \PHPUnit\Framework\TestCase
         $this->assertNotEmpty('ooi');
     }
 
+    public function testDataRelation()
+    {
+        $studentScoreList = $this->simpleTable->limit(3)->select();
+        $relationObj      = new \BaAGee\MySQL\DataRelation($studentScoreList);
+        $relationObj->hasOne('class_id', 'class_group.id', ['name', 'create_time'], [], function (&$v) {
+            $v['create_time'] = explode(' ', $v['create_time'])[0];
+        })->hasMany('student_id', 'article.user_id', ['tag'], [new \BaAGee\MySQL\Expression('id%2=0')]);
+        $studentScoreList = $relationObj->getData();
+
+        $studentScoreList = $this->simpleTable->limit(1)->select()[0];
+        $relationObj->setData($studentScoreList);
+        $relationObj->hasOne('class_id', 'class_group.id', ['name', 'create_time'], [], function (&$v) {
+            $v['create_time'] = explode(' ', $v['create_time'])[0];
+        })->hasMany('student_id', 'article.user_id', ['tag', 'create_time'], [new \BaAGee\MySQL\Expression('id%2=0')],
+            function (&$v) {
+                $v['create_time'] = date('Y-m-d H:i:s', $v['create_time']);
+            });
+        $studentScoreList = $relationObj->getData();
+        $this->assertNotEmpty($studentScoreList);
+    }
+
     public function testGetAllFullSql()
     {
         $allSql = \BaAGee\MySQL\SqlRecorder::getAllFullSql();
