@@ -35,9 +35,11 @@ final class DataRelation
      * DataRelation constructor.
      * @param $data
      */
-    public function __construct($data)
+    public function __construct(array $data = [])
     {
-        $this->data = $this->prepareData($data);
+        if (!empty($data)) {
+            $this->data = $this->prepareData($data);
+        }
     }
 
     /**
@@ -151,7 +153,7 @@ final class DataRelation
      * @param array $data
      * @return $this
      */
-    public function setData(array $data)
+    public function setData(array $data): DataRelation
     {
         $this->data = $this->prepareData($data);
         return $this;

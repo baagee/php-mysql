@@ -16,12 +16,13 @@ use  BaAGee\MySQL\SimpleTable;
 $studentScoreObj  = SimpleTable::getInstance('student_score');
 $studentScoreList = $studentScoreObj->limit(3)->select();
 
-$relationObj = new \BaAGee\MySQL\DataRelation($studentScoreList);
+$relationObj = new \BaAGee\MySQL\DataRelation();
+$relationObj->setData($studentScoreList);
 $relationObj->hasOne('class_id', 'class_group.id', ['name', 'create_time'], [], function (&$v) {
     $v['create_time'] = explode(' ', $v['create_time'])[0];
 })->hasMany('student_id', 'article.user_id', ['tag'],
     [
-      new \BaAGee\MySQL\Expression('id %2= 0'),
+        new \BaAGee\MySQL\Expression('id %2= 0'),
     ]);
 $studentScoreList = $relationObj->getData();
 foreach ($studentScoreList as $item) {
