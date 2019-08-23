@@ -9,7 +9,7 @@
 namespace BaAGee\MySQL;
 
 /**
- * Class OrmRelation
+ * Class DataRelation
  * @method $this hasOne($leftColumn, $rightTableColumn, $fields = ['*'], $conditions = [], $callback = null);
  * @method $this hasMany($leftColumn, $rightTableColumn, $fields = ['*'], $conditions = [], $callback = null);
  * @package BaAGee\MySQL
@@ -50,7 +50,8 @@ final class DataRelation
      */
     public function __call($name, $arguments): DataRelation
     {
-        if (in_array(strtolower($name), ['hasone', 'hasmany'])) {
+        $method = strtolower($name);
+        if (in_array($method, ['hasone', 'hasmany'])) {
             list($table, $column) = explode('.', $arguments[1]);
             $this->relations[] = [
                 'left_column'    => $arguments[0],
@@ -59,7 +60,7 @@ final class DataRelation
                 'fields'         => $arguments[2] ?? ['*'],
                 'conditions'     => $arguments[3] ?? [],
                 'callback'       => $arguments[4] ?? null,
-                'method'         => $name,
+                'method'         => $method,
             ];
         }
         return $this;
@@ -118,14 +119,13 @@ final class DataRelation
         //循环获取每个关系的数据
         foreach ($this->relations as $itemRelation) {
             $list   = $this->getDataFromDB($itemRelation);
-            $method = strtolower($itemRelation['method']);
-            $prefix = str_replace('has', '', $method);
-            if ($method == 'hasone') {
+            $prefix = str_replace('has', '', $itemRelation['method']);
+            if ($itemRelation['method'] == 'hasone') {
                 if (isset($itemRelation['callback']) && $itemRelation['callback'] instanceof \Closure) {
                     array_walk($list, $itemRelation['callback']);
                 }
                 $list = array_column($list, null, $itemRelation['right_column']);
-            } elseif ($method == 'hasmany') {
+            } elseif ($itemRelation['method'] == 'hasmany') {
                 $newList = [];
                 foreach ($list as $k => $item) {
                     if (isset($itemRelation['callback']) && $itemRelation['callback'] instanceof \Closure) {
