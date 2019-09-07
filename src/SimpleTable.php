@@ -14,6 +14,8 @@ use BaAGee\MySQL\Base\SqlBuilder;
 
 /**
  * Class SimpleTable
+ * @method $this hasOne(string $leftColumn, string $rightTableColumn, array $fields = ['*'], array $conditions = [], $callback = null);
+ * @method $this hasMany(string $leftColumn, string $rightTableColumn, array $fields = ['*'], array $conditions = [], $callback = null);
  * @package BaAGee\MySQL
  */
 final class SimpleTable extends SqlBuilder implements SimpleTableInterface
@@ -24,6 +26,10 @@ final class SimpleTable extends SqlBuilder implements SimpleTableInterface
      * @var DB
      */
     protected $_dbInstance = null;
+    /**
+     * @var array
+     */
+    protected $_relations = [];
 
     /**
      * 获取表结构
@@ -174,6 +180,34 @@ final class SimpleTable extends SqlBuilder implements SimpleTableInterface
             $res = $this->_dbInstance->query($sqlData['sql'], $sqlData['data']);
         }
         $this->_clear();
+        if ($generator === false && !empty($res) && is_array($res) && !empty($this->_relations)) {
+            $dataRelation = new DataRelation();
+            $dataRelation->setData($res)->setRelations($this->_relations);
+            $res = $dataRelation->getData();
+        }
         return $res;
+    }
+
+    /**
+     * @param $name
+     * @param $arguments
+     * @return SimpleTable
+     */
+    public function __call($name, $arguments): self
+    {
+        $method = strtolower($name);
+        if (in_array($method, ['hasone', 'hasmany'])) {
+            list($table, $column) = explode('.', $arguments[1]);
+            $this->_relations[] = [
+                'left_column'    => $arguments[0],
+                'right_column'   => $column,
+                'relation_table' => $table,
+                'fields'         => $arguments[2] ?? ['*'],
+                'conditions'     => $arguments[3] ?? [],
+                'callback'       => $arguments[4] ?? null,
+                'method'         => $method,
+            ];
+        }
+        return $this;
     }
 }

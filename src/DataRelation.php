@@ -160,6 +160,16 @@ final class DataRelation
     }
 
     /**
+     * @param array $relations
+     * @return DataRelation
+     */
+    public function setRelations(array $relations): DataRelation
+    {
+        $this->relations = $relations;
+        return $this;
+    }
+
+    /**
      * 一维数组转二维数组
      * @param $data
      * @return array

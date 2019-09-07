@@ -334,6 +334,24 @@ class mainTest extends \PHPUnit\Framework\TestCase
         $this->assertNotEmpty($studentScoreList);
     }
 
+    public function testDataRelation2()
+    {
+        $studentScoreList = $this->simpleTable->limit(3)->hasOne('class_id', 'class_group.id', ['name', 'create_time'], [], function (&$v) {
+            $v['create_time'] = explode(' ', $v['create_time'])[0];
+        })->hasMany('student_id', 'article.user_id', ['tag'], [
+            new \BaAGee\MySQL\Expression('id%2=0')
+        ])->select();
+        var_dump($studentScoreList);
+        $studentScoreList = $this->simpleTable->limit(1)->hasOne('class_id', 'class_group.id', ['name', 'create_time'], [], function (&$v) {
+            $v['create_time'] = explode(' ', $v['create_time'])[0];
+        })->hasMany('student_id', 'article.user_id', ['tag', 'create_time'], [new \BaAGee\MySQL\Expression('id%2=0')],
+            function (&$v) {
+                $v['create_time'] = date('Y-m-d H:i:s', $v['create_time']);
+            })->select()[0];
+        var_dump($studentScoreList);
+        $this->assertNotEmpty($studentScoreList);
+    }
+
     public function testGetAllFullSql()
     {
         $allSql = \BaAGee\MySQL\SqlRecorder::getAllFullSql();

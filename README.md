@@ -202,6 +202,15 @@ var_dump($res);
 // var_dump($article);
 // $article = SimpleTable::getInstance('article');
 // var_dump($article);
+
+// 关联查询
+$studentScoreObj = SimpleTable::getInstance('student_score');
+$studentScoreList2 = $studentScoreObj->limit(3)->hasOne('class_id', 'class_group.id', ['name', 'create_time'], [], function (&$v) {
+    $v['create_time'] = explode(' ', $v['create_time'])[0];
+})->hasMany('student_id', 'article.user_id', ['tag'],
+    [
+        new \BaAGee\MySQL\Expression('id %2= 0'),
+    ])->select();
 ```
 
 ### 稍微封装成Model
