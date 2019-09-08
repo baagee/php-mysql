@@ -183,7 +183,8 @@ final class SimpleTable extends SqlBuilder implements SimpleTableInterface
         if ($generator === false && !empty($res) && is_array($res) && !empty($this->_relations)) {
             $dataRelation = new DataRelation();
             $dataRelation->setData($res)->setRelations($this->_relations);
-            $res = $dataRelation->getData();
+            $res              = $dataRelation->getData();
+            $this->_relations = [];
         }
         return $res;
     }
