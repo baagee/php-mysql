@@ -17,7 +17,29 @@ final class SqlRecorder
     /**
      * @var array
      */
-    protected static $sqlList = [];
+    protected static $sqlList      = [];
+    /**
+     * @var null
+     */
+    protected static $saveCallback = null;
+
+    /**
+     * 设置sql日志保存方式
+     * @param       $callable
+     * @param array $params
+     */
+    public static function setSaveHandler($callable, array $params = [])
+    {
+        self::$saveCallback = compact('callable', 'params');
+        register_shutdown_function(function () {
+            foreach (self::getAllFullSql() as $itemSql) {
+                $params        = self::$saveCallback['params'];
+                $params['sql'] = $itemSql;
+                call_user_func(self::$saveCallback['callable'], $params);
+                unset($params);
+            }
+        });
+    }
 
     /**
      * 记录sql
