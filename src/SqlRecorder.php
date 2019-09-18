@@ -17,7 +17,7 @@ final class SqlRecorder
     /**
      * @var array
      */
-    protected static $sqlList      = [];
+    protected static $sqlList = [];
     /**
      * @var null
      */
@@ -33,8 +33,8 @@ final class SqlRecorder
         self::$saveCallback = compact('callable', 'params');
         register_shutdown_function(function () {
             foreach (self::getAllFullSql() as $itemSql) {
-                $params        = self::$saveCallback['params'];
-                $params['sql'] = $itemSql;
+                $params            = self::$saveCallback['params'];
+                $params['sqlInfo'] = $itemSql;
                 call_user_func(self::$saveCallback['callable'], $params);
                 unset($params);
             }
@@ -42,26 +42,34 @@ final class SqlRecorder
     }
 
     /**
-     * 记录sql
-     * @param string $prepareSql
-     * @param array  $prepareData
+     * @param string $prepareSql    预处理sql
+     * @param array  $prepareData   预处理data
+     * @param int    $startTime     开始时间
+     * @param int    $connectedTime 获得链接时间
+     * @param int    $endTime       结束时间
+     * @param bool   $success       是否执行成功
      */
-    public static function record(string $prepareSql, array $prepareData = [])
+    public static function record(string $prepareSql, array $prepareData = [], $startTime = 0, $connectedTime = 0, $endTime = 0, $success = true)
     {
         self::$sqlList[] = [
-            'prepareSql'  => $prepareSql,
-            'prepareData' => $prepareData,
+            'prepareSql'    => $prepareSql,
+            'prepareData'   => $prepareData,
+            'startTime'     => $startTime,
+            'connectedTime' => $connectedTime,
+            'endTime'       => $endTime,
+            'success'       => $success
         ];
     }
 
     /**
-     * 获取最后一条执行的sql
-     * @return mixed|string
+     * 获取最后一条执行的sql信息
+     * @return array
      */
     public static function getLastSql()
     {
-        $end = end(self::$sqlList);
-        return self::replaceSqlPlaceholder($end['prepareSql'], $end['prepareData']);
+        $end            = self::$sqlList[count(self::$sqlList) - 1];
+        $end['fullSql'] = self::replaceSqlPlaceholder($end['prepareSql'], $end['prepareData']);
+        return $end;
     }
 
     /**
@@ -71,7 +79,8 @@ final class SqlRecorder
     public static function getAllFullSql()
     {
         foreach (self::$sqlList as $itemSqlData) {
-            yield self::replaceSqlPlaceholder($itemSqlData['prepareSql'], $itemSqlData['prepareData']);
+            $itemSqlData['fullSql'] = self::replaceSqlPlaceholder($itemSqlData['prepareSql'], $itemSqlData['prepareData']);
+            yield $itemSqlData;
         }
     }
 

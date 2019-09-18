@@ -68,8 +68,9 @@ final class DB extends DBAbstract implements DBInterface
      */
     private function runSql(bool $isRead, string $sql, array $data = [], $retryTimes = 0)
     {
-        SqlRecorder::record($sql, $data);
+        $sTime      = microtime(true);
         $connection = self::getConnection($isRead);
+        $cTime      = microtime(true);
         try {
             $this->PDOStatement = $connection->prepare($sql);
             if ($this->PDOStatement === false) {
@@ -81,6 +82,7 @@ final class DB extends DBAbstract implements DBInterface
             if ($errorInfo[0] != '00000') {
                 throw new \PDOException($errorInfo[2], $errorInfo[1]);
             }
+            $success = true;
         } catch (\Exception $e) {
             // 重试三次
             if ($isRead) {
@@ -94,7 +96,11 @@ final class DB extends DBAbstract implements DBInterface
                 $retryTimes++;
                 $this->runSql($isRead, $sql, $data, $retryTimes);
             }
-            throw new \PDOException($e->getMessage() . ' [SQL: ' . self::getLastSql() . ']', $e->getCode());
+            $success = false;
+            throw new \PDOException($e->getMessage() . ' [SQL: ' . $sql . ']', $e->getCode());
+        } finally {
+            $eTime = microtime(true);
+            SqlRecorder::record($sql, $data, $sTime, $cTime, $eTime, $success);
         }
     }
 
@@ -225,8 +231,8 @@ final class DB extends DBAbstract implements DBInterface
     }
 
     /**
-     * 获取上次执行的sql
-     * @return string
+     * 获取上次执行的sql信息
+     * @return array
      */
     final public static function getLastSql()
     {
