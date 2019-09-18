@@ -39,13 +39,18 @@ class mainTest extends \PHPUnit\Framework\TestCase
         $this->db          = \BaAGee\MySQL\DB::getInstance();
     }
 
+    protected function printSqlInfo($infoArr)
+    {
+        echo sprintf('SQL cost[%s]ms %s' . PHP_EOL, ($infoArr['endTime'] - $infoArr['startTime']) * 1000, $infoArr['fullSql']);
+    }
+
     public function testTableInsert()
     {
         /*插入测试*/
         $res = $this->simpleTable->insert($this->createStudentScoreRow(), true, $this->createStudentScoreRow());
-        echo "SQL:" . DB::getLastSql();
+        $this->printSqlInfo(DB::getLastSql());
         $res = $this->simpleTable->insert($this->createStudentScoreRow(), true);
-        echo "SQL:" . DB::getLastSql();
+        $this->printSqlInfo(DB::getLastSql());
         $this->assertEquals($res > 0, true);
     }
 
@@ -57,9 +62,9 @@ class mainTest extends \PHPUnit\Framework\TestCase
             $rows[] = $this->createStudentScoreRow();
         }
         $res = $this->simpleTable->insert($rows, true);
-        echo "SQL:" . DB::getLastSql();
+        $this->printSqlInfo(DB::getLastSql());
         $res = $this->simpleTable->insert($rows, false, $this->createStudentScoreRow());
-        echo "SQL:" . DB::getLastSql();
+        $this->printSqlInfo(DB::getLastSql());
         var_dump($res);
         $this->assertNotEmpty('$res');
     }
@@ -68,7 +73,7 @@ class mainTest extends \PHPUnit\Framework\TestCase
     {
         /*删除测试*/
         $res = $this->simpleTable->where(['id' => ['=', mt_rand(300, 590)]])->delete();
-        echo "SQL:" . DB::getLastSql();
+        $this->printSqlInfo(DB::getLastSql());
         var_dump($res);
         $this->assertNotEmpty('$res');
     }
@@ -77,7 +82,7 @@ class mainTest extends \PHPUnit\Framework\TestCase
     {
         /*更新测试*/
         $res = $this->simpleTable->where(['id' => ['=', mt_rand(300, 590)]])->update(['student_name' => '哈哈哈' . mt_rand(0, 99)]);
-        echo "SQL:" . DB::getLastSql();
+        $this->printSqlInfo(DB::getLastSql());
         var_dump($res);
 
         $res = $this->simpleTable->where([
@@ -89,7 +94,7 @@ class mainTest extends \PHPUnit\Framework\TestCase
             'math'    => (new Expression('math - 1')),
         ]);
         var_dump('递增递减结果：', $res);
-        echo 'SQL:' . DB::getLastSql() . PHP_EOL;
+        $this->printSqlInfo(DB::getLastSql());
         $this->assertNotEmpty('$res');
     }
 
@@ -101,9 +106,9 @@ class mainTest extends \PHPUnit\Framework\TestCase
             $rows[] = $this->createStudentScoreRow();
         }
         $res = $this->simpleTable->replace($rows);
-        echo "SQL:" . DB::getLastSql();
+        $this->printSqlInfo(DB::getLastSql());
         $res = $this->simpleTable->replace($this->createStudentScoreRow());
-        echo "SQL:" . DB::getLastSql();
+        $this->printSqlInfo(DB::getLastSql());
         var_dump($res);
         $this->assertNotEmpty('$res');
     }
@@ -133,7 +138,7 @@ class mainTest extends \PHPUnit\Framework\TestCase
         $res = $this->simpleTable->where(['id' => ['=', mt_rand(300, 590)]])->where(['sex' => ['=', 0]])
             ->having(['id' => ['<', 10]])->having(['age' => ['<', 20]])
             ->fields(['distinct `age`', 'sex'])->select(true);
-        echo "SQL:" . DB::getLastSql();
+        $this->printSqlInfo(DB::getLastSql());
         var_dump($res);
         /*查询测试 多条件嵌套*/
         $res = $this->simpleTable->fields([
@@ -170,14 +175,14 @@ class mainTest extends \PHPUnit\Framework\TestCase
         ])->orWhere([
             'age' => ['=', 18]
         ])->orderBy(['id' => 'desc'])->orderBy(['age' => 'desc'])->limit(0, 2)->groupBy('student_name')->lockInShareMode()->select(false);
-        echo "SQL:" . DB::getLastSql();
+        $this->printSqlInfo(DB::getLastSql());
         // var_dump($res);
 
         $res = $this->simpleTable->fields([
             'avg(chinese)', 'class_id', 'min(`age`)', 'max(math)', 'sum(biology)', 'count(student_id)'
         ])->where(['id' => ['>', mt_rand(300, 590)]])->groupBy('class_id')->orderBy(['class_id' => 'desc'])
             ->limit(0, 7)->lockForUpdate()->select();
-        echo "SQL:" . DB::getLastSql();
+        $this->printSqlInfo(DB::getLastSql());
         // var_dump($res);
 
         $res = $this->simpleTable->fields([
@@ -205,7 +210,7 @@ class mainTest extends \PHPUnit\Framework\TestCase
             'math' => ['>', 60]
         ])->limit(2)->orderBy(['age' => 'desc', 'student_id' => 'asc'])
             ->groupBy('student_id')->groupBy('math')->lockInShareMode()->select();
-        echo "SQL:" . DB::getLastSql();
+        $this->printSqlInfo(DB::getLastSql());
         $this->simpleTable->where(['id' => ['<', 400]])->limit(1)->select();
         $this->simpleTable->fields(['*'])->where(['id' => ['<', 400]])->limit(1)->select();
         $this->assertNotEmpty('$res');
@@ -229,7 +234,7 @@ class mainTest extends \PHPUnit\Framework\TestCase
         /*查询测试*/
         $list = $db->query('select * from student_score where id >? order by id desc limit 2', [mt_rand(10, 100)]);
         // var_dump($list);
-        echo "SQL:" . DB::getLastSql();
+        $this->printSqlInfo(DB::getLastSql());
 
         // 当一次查询数据量大时可以使用yield 返回生成器
         $list = $db->yieldQuery('select * from student_score where id>:id', ['id' => 0]);
@@ -237,7 +242,7 @@ class mainTest extends \PHPUnit\Framework\TestCase
         foreach ($list as $i => $item) {
             // var_dump($item);
         }
-        echo "SQL:" . DB::getLastSql();
+        $this->printSqlInfo(DB::getLastSql());
         $this->assertNotEmpty('ooi');
     }
 
@@ -356,7 +361,8 @@ class mainTest extends \PHPUnit\Framework\TestCase
     {
         $allSql = \BaAGee\MySQL\SqlRecorder::getAllFullSql();
         foreach ($allSql as $index => $sql) {
-            echo sprintf('SQL[%d] %s' . PHP_EOL, $index, $sql);
+            $this->printSqlInfo($sql);
+            // echo sprintf('SQL[%d] cost[%s] %s' . PHP_EOL, $index, ($sql['endTime'] - $sql['startTime']) * 1000, $sql['fullSql']);
         }
         $this->assertNotEmpty('sdfgd');
     }
@@ -378,14 +384,14 @@ class mainTest extends \PHPUnit\Framework\TestCase
 (null ,:user_id,:title,:content,:tag,:create_time)';
         $userData = $this->createArticleRow();
         $db->execute($sql, $userData);
-        echo "SQL:" . DB::getLastSql();
+        $this->printSqlInfo(DB::getLastSql());
 
         $sql        = 'update student_score set english=? where id = ?';
         $updateData = [mt_rand(30, 100), 313];
 
         // throw new Exception('发生失误');
         $db->execute($sql, $updateData);
-        echo "SQL:" . DB::getLastSql();
+        $this->printSqlInfo(DB::getLastSql());
         return true;
     }
 
