@@ -42,18 +42,22 @@ final class SqlRecorder
     }
 
     /**
-     * @param string $prepareSql
-     * @param array  $prepareData
-     * @param int    $startTime
-     * @param int    $endTime
+     * @param string $prepareSql    预处理sql
+     * @param array  $prepareData   预处理data
+     * @param int    $startTime     开始时间
+     * @param int    $connectedTime 获得链接时间
+     * @param int    $endTime       结束时间
+     * @param bool   $success       是否执行成功
      */
-    public static function record(string $prepareSql, array $prepareData = [], $startTime = 0, $endTime = 0)
+    public static function record(string $prepareSql, array $prepareData = [], $startTime = 0, $connectedTime = 0, $endTime = 0, $success = true)
     {
         self::$sqlList[] = [
-            'prepareSql'  => $prepareSql,
-            'prepareData' => $prepareData,
-            'startTime'   => $startTime,
-            'endTime'     => $endTime,
+            'prepareSql'    => $prepareSql,
+            'prepareData'   => $prepareData,
+            'startTime'     => $startTime,
+            'connectedTime' => $connectedTime,
+            'endTime'       => $endTime,
+            'success'       => $success
         ];
     }
 
