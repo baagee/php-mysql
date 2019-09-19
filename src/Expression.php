@@ -34,7 +34,7 @@ final class Expression
      */
     public function __toString()
     {
-        return $this->expression;
+        $this->toString();
     }
 
     /**
