@@ -100,7 +100,7 @@ final class DB extends DBAbstract implements DBInterface
             throw new \PDOException($e->getMessage() . ' [SQL: ' . $sql . ']', $e->getCode());
         } finally {
             $eTime = microtime(true);
-            SqlRecorder::record($sql, $data, $sTime, $cTime, $eTime, $success);
+            SqlRecorder::record($sql, $sTime, $cTime, $eTime, $success, $data);
         }
     }
 
