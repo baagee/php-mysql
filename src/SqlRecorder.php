@@ -32,24 +32,30 @@ final class SqlRecorder
     {
         self::$saveCallback = compact('callable', 'params');
         register_shutdown_function(function () {
-            foreach (self::getAllFullSql() as $itemSql) {
-                $params            = self::$saveCallback['params'];
-                $params['sqlInfo'] = $itemSql;
-                call_user_func(self::$saveCallback['callable'], $params);
-                unset($params);
+            try {
+                foreach (self::getAllFullSql() as $itemSql) {
+                    $params            = self::$saveCallback['params'];
+                    $params['sqlInfo'] = $itemSql;
+                    call_user_func(self::$saveCallback['callable'], $params);
+                    unset($params);
+                }
+            } catch (\Throwable $e) {
+                // 捕获所有抛出的错误 保证不会影响到后面的register_shutdown_function
+                // TODO something
             }
         });
     }
 
     /**
+     * 记录sql执行信息
      * @param string $prepareSql    预处理sql
      * @param array  $prepareData   预处理data
-     * @param int    $startTime     开始时间
-     * @param int    $connectedTime 获得链接时间
-     * @param int    $endTime       结束时间
+     * @param float  $startTime     开始时间点
+     * @param float  $connectedTime 获得链接时间点
+     * @param float  $endTime       结束时间点
      * @param bool   $success       是否执行成功
      */
-    public static function record(string $prepareSql, array $prepareData = [], $startTime = 0, $connectedTime = 0, $endTime = 0, $success = true)
+    public static function record(string $prepareSql, $startTime, $connectedTime, $endTime, bool $success, array $prepareData = [])
     {
         self::$sqlList[] = [
             'prepareSql'    => $prepareSql,
