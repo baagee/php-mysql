@@ -55,15 +55,15 @@ final class DBConfig
      */
     final protected static function createSchemasDir()
     {
-        $schemasCachePath = realpath(self::get('schemasCachePath'));
+        $schemasCachePath = self::get('schemasCachePath');
         if (!is_null($schemasCachePath) && !empty($schemasCachePath)) {
             if (!is_dir($schemasCachePath)) {
-                $res = mkdir($schemasCachePath, '0777', true);
+                $res = mkdir($schemasCachePath, 0755, true);
                 if ($res == false) {
                     throw new \Exception(sprintf('%s目录创建失败', $schemasCachePath));
                 }
             } elseif (!is_writeable($schemasCachePath)) {
-                $res = chmod($schemasCachePath, '0777');
+                $res = chmod($schemasCachePath, 0755);
                 if ($res == false) {
                     throw new \Exception(sprintf('%s目录设置可读写权限失败', $schemasCachePath));
                 }
