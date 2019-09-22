@@ -39,6 +39,38 @@ final class SimpleTable extends SqlBuilder implements SimpleTableInterface
      */
     private static function getTableSchema($tableName)
     {
+        $schemasCachePath = realpath(DBConfig::get('schemasCachePath'));
+        if (!is_null($schemasCachePath) && !empty($schemasCachePath)) {
+            // 存在缓存目录 判断缓存在不在
+            $schemaFile = $schemasCachePath . DIRECTORY_SEPARATOR . $tableName . '.php';
+            if (!is_file($schemaFile)) {
+                //从数据库查询 写入文件缓存
+                $schema = self::getSchemaFromDb($tableName);
+                register_shutdown_function(function () use ($schema, $schemaFile) {
+                    try {
+                        file_put_contents($schemaFile, '<?php' . PHP_EOL . 'return ' . var_export($schema, true) . ';');
+                    } catch (\Throwable $e) {
+                    }
+                });
+            } else {
+                // 读取缓存
+                $schema = include_once $schemaFile;
+            }
+        } else {
+            // 不存在缓存目录每次从数据库重新查询
+            $schema = self::getSchemaFromDb($tableName);
+        }
+        return $schema;
+    }
+
+    /**
+     * 从数据库查询表结构
+     * @param $tableName
+     * @return array
+     * @throws \Exception
+     */
+    private static function getSchemaFromDb($tableName)
+    {
         $sql     = 'SHOW COLUMNS FROM `' . $tableName . '`';
         $res     = DB::getInstance()->query($sql);
         $schema  = [];

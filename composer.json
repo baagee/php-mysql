@@ -16,11 +16,18 @@
   ],
   "require": {
     "php": ">=7.1",
+    "baagee/php-log": "0.0.*",
     "ext-pdo":"*"
   },
   "autoload": {
     "psr-4": {
       "BaAGee\\MySQL\\": "src/"
+    }
+  },
+  "repositories": {
+    "packagist": {
+      "type": "composer",
+      "url": "https://mirrors.aliyun.com/composer/"
     }
   }
 }
