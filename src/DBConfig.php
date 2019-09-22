@@ -46,6 +46,28 @@ final class DBConfig
             // 只允许初始化一次 检查配置
             self::$config = self::checkConfig($config);
             self::$isInit = true;
+            self::createSchemasDir();
+        }
+    }
+
+    /**
+     * @throws \Exception
+     */
+    final protected static function createSchemasDir()
+    {
+        $schemasCachePath = realpath(self::get('schemasCachePath'));
+        if (!is_null($schemasCachePath) && !empty($schemasCachePath)) {
+            if (!is_dir($schemasCachePath)) {
+                $res = mkdir($schemasCachePath, '0777', true);
+                if ($res == false) {
+                    throw new \Exception(sprintf('%s目录创建失败', $schemasCachePath));
+                }
+            } elseif (!is_writeable($schemasCachePath)) {
+                $res = chmod($schemasCachePath, '0777');
+                if ($res == false) {
+                    throw new \Exception(sprintf('%s目录设置可读写权限失败', $schemasCachePath));
+                }
+            }
         }
     }
 
