@@ -4,55 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "ce4a8e5dbddcd6c759ee502529b4254d",
-    "packages": [
-        {
-            "name": "baagee/php-log",
-            "version": "v0.0.4",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/baagee/php-log.git",
-                "reference": "6cf2bc7eeaa676228460476bc6e836cc1a601915"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/baagee/php-log/zipball/6cf2bc7eeaa676228460476bc6e836cc1a601915",
-                "reference": "6cf2bc7eeaa676228460476bc6e836cc1a601915",
-                "shasum": "",
-                "mirrors": [
-                    {
-                        "url": "https://mirrors.aliyun.com/composer/dists/%package%/%reference%.%type%",
-                        "preferred": true
-                    }
-                ]
-            },
-            "require": {
-                "php": ">=7.1"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "BaAGee\\Log\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "BaAGee",
-                    "email": "2274313786@qq.com"
-                }
-            ],
-            "description": "PHP Log library",
-            "keywords": [
-                "log",
-                "php"
-            ],
-            "time": "2019-04-03T16:01:20+00:00"
-        }
-    ],
+    "content-hash": "1befc06ffa64e3314207e97ee4ed2086",
+    "packages": [],
     "packages-dev": [],
     "aliases": [],
     "minimum-stability": "dev",
