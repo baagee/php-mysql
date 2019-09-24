@@ -82,25 +82,27 @@ final class DB extends DBAbstract implements DBInterface
             if ($errorInfo[0] != '00000') {
                 throw new \PDOException($errorInfo[2], $errorInfo[1]);
             }
-            $success = true;
-        } catch (\Exception $e) {
-            // 重试三次
-            if ($isRead) {
-                //读操作获取对应从库配置
-                $rtc = DBConfig::get('slave')[Connection::getSlaveId()];
-            } else {
-                $rtc = DBConfig::get();
-            }
-            if ($this->isBreak($e) && $retryTimes < ($rtc['retryTimes'] ?? 3)) {
-                self::closeConnection($isRead);
-                $retryTimes++;
-                $this->runSql($isRead, $sql, $data, $retryTimes);
-            }
-            $success = false;
-            throw new \PDOException($e->getMessage() . ' [SQL: ' . $sql . ']', $e->getCode());
-        } finally {
             $eTime = microtime(true);
-            SqlRecorder::record($sql, $sTime, $cTime, $eTime, $success, $data);
+            SqlRecorder::record($sql, $sTime, $cTime, $eTime, true, $data);
+        } catch (\PDOException $e) {
+            $errMsg = $e->getMessage();//记录失败原因
+            $eTime  = microtime(true);
+            SqlRecorder::record($sql, $sTime, $cTime, $eTime, false, $data, $errMsg);
+            if ($this->isBreak($e)) {
+                // 重试三次
+                if ($isRead) {
+                    //读操作获取对应从库配置
+                    $rtc = DBConfig::get('slave')[Connection::getSlaveId()];
+                } else {
+                    $rtc = DBConfig::get();
+                }
+                if ($retryTimes < (int)($rtc['retryTimes'] ?? 3)) {
+                    self::closeConnection($isRead);
+                    $retryTimes++;
+                    $this->runSql($isRead, $sql, $data, $retryTimes);
+                }
+            }
+            throw new \PDOException($errMsg . ' [SQL: ' . $sql . ']', $e->getCode());
         }
     }
 

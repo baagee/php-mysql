@@ -54,17 +54,23 @@ final class SqlRecorder
      * @param float  $connectedTime 获得链接时间点
      * @param float  $endTime       结束时间点
      * @param bool   $success       是否执行成功
+     * @param string $errMsg        错误信息
      */
-    public static function record(string $prepareSql, $startTime, $connectedTime, $endTime, bool $success, array $prepareData = [])
+    public static function record(string $prepareSql, $startTime, $connectedTime, $endTime, bool $success,
+                                  array $prepareData = [], $errMsg = '')
     {
-        self::$sqlList[] = [
+        $row = [
             'prepareSql'    => $prepareSql,
             'prepareData'   => $prepareData,
             'startTime'     => $startTime,
             'connectedTime' => $connectedTime,
             'endTime'       => $endTime,
-            'success'       => $success
+            'success'       => $success,
         ];
+        if (!$success) {
+            $row['errorInfo'] = $errMsg;
+        }
+        self::$sqlList[] = $row;
     }
 
     /**
