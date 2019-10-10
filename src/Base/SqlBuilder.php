@@ -399,6 +399,15 @@ abstract class SqlBuilder
      */
     private function createSingleCondition(string $field, $condition, string $op = 'AND', bool $having = false)
     {
+        $uniqId          = function ($len) {
+            $string = 'qazwsxedcrfvtgbyhnujmikolp0129384756';
+            $count  = strlen($string) - 1;
+            $return = '';
+            for ($i = 0; $i < $len; $i++) {
+                $return .= $string{mt_rand(0, $count)};
+            }
+            return $return;
+        };
         $conditionString = '';
         $k               = trim($field, '`');
         if ($having == true || ($having == false && in_array($k, array_keys($this->_tableSchema['columns'])))) {
@@ -406,9 +415,9 @@ abstract class SqlBuilder
                 $conditionString .= sprintf(' `%s` %s ', $k, $condition, $op);
             } elseif (is_array($condition)) {
                 if ($having) {
-                    $z_k = '_h_' . $k . '_' . uniqid();
+                    $z_k = '_h_' . $k . '_' . $uniqId(7);
                 } else {
-                    $z_k = '_w_' . $k . '_' . uniqid();
+                    $z_k = '_w_' . $k . '_' . $uniqId(7);
                 }
                 $w  = strtoupper(trim($condition[0]));
                 $vv = $condition[1];
