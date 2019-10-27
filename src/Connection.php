@@ -68,13 +68,13 @@ final class Connection
         } else {
             $connect_timeout = 2;
         }
-        $options = [
+        $options = ($config['options'] ?? []) + [
                 \PDO::MYSQL_ATTR_MULTI_STATEMENTS => false,//禁止多语句查询
                 \PDO::MYSQL_ATTR_INIT_COMMAND     => "SET NAMES '" . $config['charset'] . "';",// 设置客户端连接字符集
                 \PDO::ATTR_TIMEOUT                => $connect_timeout,// 设置超时
                 \PDO::ATTR_ERRMODE                => \PDO::ERRMODE_EXCEPTION,
-                \PDO::ATTR_EMULATE_PREPARES       => false, //禁用模拟预处理
-            ] + ($config['options'] ?? []);
+                // \PDO::ATTR_EMULATE_PREPARES       => false, //禁用模拟预处理
+            ];
         $dsn     = sprintf('mysql:dbname=%s;host=%s;port=%d', $config['database'], $config['host'], $config['port']);
         try {
             $pdo = new \PDO($dsn, $config['user'], $config['password'], $options);
