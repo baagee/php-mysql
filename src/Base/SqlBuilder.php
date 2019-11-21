@@ -317,10 +317,7 @@ abstract class SqlBuilder
             $this->__lastPrepareSql .= ' ON DUPLICATE KEY UPDATE ' . $sub;
         }
 
-        return [
-            'sql'  => $this->__lastPrepareSql,
-            'data' => $this->__lastPrepareData
-        ];
+        return [$this->__lastPrepareSql, $this->__lastPrepareData];
     }
 
     /**
@@ -334,10 +331,7 @@ abstract class SqlBuilder
             $this->__lastPrepareSql .= $this->__whereConditions;
         }
         //else 全删除
-        return [
-            'sql'  => $this->__lastPrepareSql,
-            'data' => $this->__lastPrepareData,
-        ];
+        return [$this->__lastPrepareSql, $this->__lastPrepareData];
     }
 
     /**
@@ -363,10 +357,7 @@ abstract class SqlBuilder
             $this->__lastPrepareSql .= $this->__whereConditions;
         }
         //else 全更新
-        return [
-            'sql'  => $this->__lastPrepareSql,
-            'data' => $this->__lastPrepareData,
-        ];
+        return [$this->__lastPrepareSql, $this->__lastPrepareData];
     }
 
     /**
@@ -383,10 +374,7 @@ abstract class SqlBuilder
         }
         $this->__lastPrepareSql .= (' FROM `' . $this->_tableName . '`' . $this->__whereConditions . $this->__groupBy .
             $this->__havingConditions . $this->__orderBy . $this->__limit . $this->__lock);
-        return [
-            'sql'  => $this->__lastPrepareSql,
-            'data' => $this->__lastPrepareData,
-        ];
+        return [$this->__lastPrepareSql, $this->__lastPrepareData];
     }
 
     /**

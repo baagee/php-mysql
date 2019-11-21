@@ -139,8 +139,8 @@ final class SimpleTable extends SqlBuilder implements SimpleTableInterface
             $data = [$data];
         }
         // 批量插入
-        $sqlData = $this->_buildInsertOrReplace($data, false, $ignore, $onDuplicateUpdateFields);
-        $res     = $this->_dbInstance->execute($sqlData['sql'], $sqlData['data']);
+        list($sql, $prepareData) = $this->_buildInsertOrReplace($data, false, $ignore, $onDuplicateUpdateFields);
+        $res = $this->_dbInstance->execute($sql, $prepareData);
         $this->_clear();
         if ($res >= 1) {
             return $this->_dbInstance->getLastInsertId();
@@ -160,8 +160,8 @@ final class SimpleTable extends SqlBuilder implements SimpleTableInterface
             $data = [$data];
         }
         // 批量插入
-        $sqlData = $this->_buildInsertOrReplace($data, true, false, []);
-        $res     = $this->_dbInstance->execute($sqlData['sql'], $sqlData['data']);
+        list($sql, $prepareData) = $this->_buildInsertOrReplace($data, true, false, []);
+        $res = $this->_dbInstance->execute($sql, $prepareData);
         $this->_clear();
         if ($res >= 1) {
             return $this->_dbInstance->getLastInsertId();
@@ -177,8 +177,8 @@ final class SimpleTable extends SqlBuilder implements SimpleTableInterface
      */
     final public function delete()
     {
-        $sqlData = $this->_buildDelete();
-        $res     = $this->_dbInstance->execute($sqlData['sql'], $sqlData['data']);
+        list($sql, $prepareData) = $this->_buildDelete();
+        $res = $this->_dbInstance->execute($sql, $prepareData);
         $this->_clear();
         return $res;
     }
@@ -191,8 +191,8 @@ final class SimpleTable extends SqlBuilder implements SimpleTableInterface
      */
     final public function update(array $data = [])
     {
-        $sqlData = $this->_buildUpdate($data);
-        $res     = $this->_dbInstance->execute($sqlData['sql'], $sqlData['data']);
+        list($sql, $prepareData) = $this->_buildUpdate($data);
+        $res = $this->_dbInstance->execute($sql, $prepareData);
         $this->_clear();
         return $res;
     }
@@ -205,11 +205,11 @@ final class SimpleTable extends SqlBuilder implements SimpleTableInterface
      */
     final public function select(bool $generator = false)
     {
-        $sqlData = $this->_buildSelect();
+        list($sql, $prepareData) = $this->_buildSelect();
         if ($generator) {
-            $res = $this->_dbInstance->yieldQuery($sqlData['sql'], $sqlData['data']);
+            $res = $this->_dbInstance->yieldQuery($sql, $prepareData);
         } else {
-            $res = $this->_dbInstance->query($sqlData['sql'], $sqlData['data']);
+            $res = $this->_dbInstance->query($sql, $prepareData);
         }
         $this->_clear();
         if ($generator === false && !empty($res) && is_array($res) && !empty($this->_relations)) {
