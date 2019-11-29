@@ -9,7 +9,6 @@
 namespace BaAGee\MySQL\Base;
 
 use BaAGee\MySQL\Connection;
-use BaAGee\MySQL\DB;
 
 /**
  * Class DBAbstract
@@ -21,10 +20,10 @@ abstract class DBAbstract
 
     /**
      * 获取DB
-     * @return DB
+     * @return \BaAGee\MySQL\DB
      * @throws \Exception
      */
-    public static function getInstance(): DB
+    public static function getInstance()
     {
         if (self::$_instance === null) {
             self::$_instance = new static();
