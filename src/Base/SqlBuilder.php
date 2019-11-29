@@ -392,7 +392,7 @@ abstract class SqlBuilder
             $count  = strlen($string) - 1;
             $return = '';
             for ($i = 0; $i < $len; $i++) {
-                $return .= $string{mt_rand(0, $count)};
+                $return .= $string[mt_rand(0, $count)];
             }
             return $return;
         };

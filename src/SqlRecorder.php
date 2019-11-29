@@ -128,7 +128,7 @@ final class SqlRecorder
         } else {
             // 使用:field占位
             foreach ($prepareData as $field => $value) {
-                if ($field{0} !== ':') {
+                if ($field[0] !== ':') {
                     $field = ':' . $field;
                 }
                 $type = gettype($value);
