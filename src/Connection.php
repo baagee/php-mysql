@@ -18,21 +18,27 @@ final class Connection
 {
     use SingletonTrait;
 
-    protected static $slaveId = 0;
+    /**
+     * @var array 保存slaveId
+     */
+    protected static $slaveId = [];
 
     /**
      * @var array mysql配置
      */
     protected static $config = [];
+    /**
+     * @var string 当前配置名
+     */
+    protected static $configName = '';
 
     /**
      * @throws \Exception
      */
     final private static function getDBConfig()
     {
-        if (empty(self::$config)) {
-            self::$config = DBConfig::get();
-        }
+        self::$config = DBConfig::get();
+        self::$configName = DBConfig::getCurrentName();
     }
 
     /**
@@ -40,7 +46,10 @@ final class Connection
      */
     public static function getSlaveId()
     {
-        return self::$slaveId;
+        if (isset(self::$slaveId[self::$configName])) {
+            return self::$slaveId[self::$configName];
+        }
+        return -1;
     }
 
     /**
@@ -53,6 +62,7 @@ final class Connection
     {
         // 获取DB配置
         self::getDBConfig();
+        // echo "当前使用：" . self::$configName . PHP_EOL;
         return self::getConnection($isRead);
     }
 
@@ -63,6 +73,7 @@ final class Connection
      */
     private static function getPdoObject(array $config, $retryTimes = 0)
     {
+        // echo '连接数据库：' . self::$configName . PHP_EOL;
         if (isset($config['connectTimeout'])) {
             $connect_timeout = intval($config['connectTimeout']) == 0 ? 2 : intval($config['connectTimeout']);
         } else {
@@ -70,12 +81,12 @@ final class Connection
         }
         $options = ($config['options'] ?? []) + [
                 \PDO::MYSQL_ATTR_MULTI_STATEMENTS => false,//禁止多语句查询
-                \PDO::MYSQL_ATTR_INIT_COMMAND     => "SET NAMES '" . $config['charset'] . "';",// 设置客户端连接字符集
-                \PDO::ATTR_TIMEOUT                => $connect_timeout,// 设置超时
-                \PDO::ATTR_ERRMODE                => \PDO::ERRMODE_EXCEPTION,
+                \PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES '" . $config['charset'] . "';",// 设置客户端连接字符集
+                \PDO::ATTR_TIMEOUT => $connect_timeout,// 设置超时
+                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
                 // \PDO::ATTR_EMULATE_PREPARES       => false, //禁用模拟预处理
             ];
-        $dsn     = sprintf('mysql:dbname=%s;host=%s;port=%d', $config['database'], $config['host'], $config['port']);
+        $dsn = sprintf('mysql:dbname=%s;host=%s;port=%d', $config['database'], $config['host'], $config['port']);
         try {
             $pdo = new \PDO($dsn, $config['user'], $config['password'], $options);
             return $pdo;
@@ -96,11 +107,11 @@ final class Connection
      */
     private static function getGravity(array $gravity)
     {
-        $res          = 0;
+        $res = 0;
         $total_weight = 0;
-        $weights      = [];
+        $weights = [];
         foreach ($gravity as $sid => $weight) {
-            $total_weight           += $weight;
+            $total_weight += $weight;
             $weights[$total_weight] = $sid;
         }
         $rand_weight = mt_rand(1, $total_weight);
@@ -122,13 +133,13 @@ final class Connection
     {
         if (!isset(self::$config['slave'])) {
             // 没有配置从库 忽略参数 全删除
-            unset(self::$_instance['slave'], self::$_instance['master']);
+            unset(self::$_instance[self::$configName]['slave'], self::$_instance[self::$configName]['master']);
         } else {
             // 配置了主从
             if ($isRead) {
-                unset(self::$_instance['slave']);
+                unset(self::$_instance[self::$configName]['slave']);
             } else {
-                unset(self::$_instance['master']);
+                unset(self::$_instance[self::$configName]['master']);
             }
         }
         return true;
@@ -145,32 +156,32 @@ final class Connection
             // 配置了从库
             if ($is_read) {
                 // 读库
-                if (!isset(self::$_instance['slave'])) {
+                if (!isset(self::$_instance[self::$configName]['slave'])) {
                     //读操作选择slave
-                    self::$slaveId            = self::getGravity(array_column(self::$config['slave'], 'weight'));
-                    $connection               = self::getPdoObject(self::$config['slave'][self::$slaveId]);
-                    self::$_instance['slave'] = $connection;
+                    self::$slaveId[self::$configName] = self::getGravity(array_column(self::$config['slave'], 'weight'));
+                    $connection = self::getPdoObject(self::$config['slave'][self::$slaveId[self::$configName]]);
+                    self::$_instance[self::$configName]['slave'] = $connection;
                 } else {
-                    $connection = self::$_instance['slave'];
+                    $connection = self::$_instance[self::$configName]['slave'];
                 }
             } else {
                 // 除了读操作的，选择主库
-                if (!isset(self::$_instance['master'])) {
-                    $connection                = self::getPdoObject(self::$config);
-                    self::$_instance['master'] = $connection;
+                if (!isset(self::$_instance[self::$configName]['master'])) {
+                    $connection = self::getPdoObject(self::$config);
+                    self::$_instance[self::$configName]['master'] = $connection;
                 } else {
-                    $connection = self::$_instance['master'];
+                    $connection = self::$_instance[self::$configName]['master'];
                 }
             }
         } else {
             // 没有配置读写分离从库，读写在一个数据库
-            if (!isset(self::$_instance['master'])) {
+            if (!isset(self::$_instance[self::$configName]['master'])) {
                 // 主库链接也不存在
-                $connection                = self::getPdoObject(self::$config);
-                self::$_instance['master'] = self::$_instance['slave'] = $connection;
+                $connection = self::getPdoObject(self::$config);
+                self::$_instance[self::$configName]['master'] = self::$_instance[self::$configName]['slave'] = $connection;
             } else {
                 // 直接使用主库
-                $connection = self::$_instance['master'];
+                $connection = self::$_instance[self::$configName]['master'];
             }
         }
         return $connection;

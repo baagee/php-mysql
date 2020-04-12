@@ -39,22 +39,27 @@ final class SimpleTable extends SqlBuilder implements SimpleTableInterface
      */
     private static function getTableSchema($tableName)
     {
-        $schemasCachePath = realpath(DBConfig::get('schemasCachePath'));
+        $schemasCachePath = DBConfig::get('schemasCachePath', '');
         if (!is_null($schemasCachePath) && !empty($schemasCachePath)) {
             // 存在缓存目录 判断缓存在不在
+            $schemasCachePath .= DIRECTORY_SEPARATOR . DBConfig::getCurrentName();
+            if (!is_dir($schemasCachePath)) {
+                DBConfig::createSchemasDir();
+            }
             $schemaFile = $schemasCachePath . DIRECTORY_SEPARATOR . $tableName . '.php';
             if (!is_file($schemaFile)) {
                 //从数据库查询 写入文件缓存
                 $schema = self::getSchemaFromDb($tableName);
                 register_shutdown_function(function () use ($schema, $schemaFile) {
                     try {
-                        file_put_contents($schemaFile, '<?php' . PHP_EOL . 'return ' . var_export($schema, true) . ';');
+                        file_put_contents($schemaFile, '<?php' . PHP_EOL . "// Create time: " . date('Y-m-d H:i:s')
+                            . PHP_EOL . 'return ' . var_export($schema, true) . ';');
                     } catch (\Throwable $e) {
                     }
                 });
             } else {
                 // 读取缓存
-                $schema = include_once $schemaFile;
+                $schema = require $schemaFile;
             }
         } else {
             // 不存在缓存目录每次从数据库重新查询
@@ -71,9 +76,9 @@ final class SimpleTable extends SqlBuilder implements SimpleTableInterface
      */
     private static function getSchemaFromDb($tableName)
     {
-        $sql     = 'SHOW COLUMNS FROM `' . $tableName . '`';
-        $res     = DB::getInstance()->query($sql);
-        $schema  = [];
+        $sql = 'SHOW COLUMNS FROM `' . $tableName . '`';
+        $res = DB::getInstance()->query($sql);
+        $schema = [];
         $columns = [];
         foreach ($res as $v) {
             if ($v['Key'] === 'PRI') {
@@ -112,16 +117,16 @@ final class SimpleTable extends SqlBuilder implements SimpleTableInterface
             throw new \Exception('表名不能为空');
         }
         if (empty(self::$_instance[$tableName])) {
-            $obj                         = new static();
-            $obj->_tableName             = $tableName;
-            $obj->_tableSchema           = self::getTableSchema($tableName);
-            $obj->_dbInstance            = DB::getInstance();
+            $obj = new static();
+            $obj->_tableName = $tableName;
+            $obj->_dbInstance = DB::getInstance();
             self::$_instance[$tableName] = $obj;
         } else {
             $obj = self::$_instance[$tableName];
             // 清空上次的缓存字段
             $obj->_clear();
         }
+        $obj->_tableSchema = self::getTableSchema($tableName);
         return $obj;
     }
 
@@ -215,7 +220,7 @@ final class SimpleTable extends SqlBuilder implements SimpleTableInterface
         if ($generator === false && !empty($res) && is_array($res) && !empty($this->_relations)) {
             $dataRelation = new DataRelation();
             $dataRelation->setData($res)->setRelations($this->_relations);
-            $res              = $dataRelation->getData();
+            $res = $dataRelation->getData();
             $this->_relations = [];
         }
         return $res;
@@ -232,13 +237,13 @@ final class SimpleTable extends SqlBuilder implements SimpleTableInterface
         if (in_array($method, ['hasone', 'hasmany'])) {
             list($table, $column) = explode('.', $arguments[1]);
             $this->_relations[] = [
-                'left_column'    => $arguments[0],
-                'right_column'   => $column,
+                'left_column' => $arguments[0],
+                'right_column' => $column,
                 'relation_table' => $table,
-                'fields'         => $arguments[2] ?? ['*'],
-                'conditions'     => $arguments[3] ?? [],
-                'callback'       => $arguments[4] ?? null,
-                'method'         => $method,
+                'fields' => $arguments[2] ?? ['*'],
+                'conditions' => $arguments[3] ?? [],
+                'callback' => $arguments[4] ?? null,
+                'method' => $method,
             ];
         }
         return $this;
