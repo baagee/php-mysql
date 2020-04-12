@@ -5,21 +5,47 @@
  * Date: 2019/7/27
  * Time: 20:39
  */
+ini_set('display_errors', 1);
 $st = microtime(true);
 include __DIR__ . '/../vendor/autoload.php';
 
-use  BaAGee\MySQL\SimpleTable;
+use BaAGee\MySQL\SimpleTable;
 use BaAGee\MySQL\Expression;
+use BaAGee\MySQL\SqlRecorder;
 
+$uniqId          = function ($len) {
+    $string = 'qazwsxedcrfvtgbyhnujmikolp0129384756';
+    $count  = strlen($string) - 1;
+    $return = '';
+    for ($i = 0; $i < $len; $i++) {
+        $return .= $string{mt_rand(0, $count)};
+    }
+    return $return;
+};
+//
+// $res=$uniqId(7);
+// var_dump($res);
+// die;
 
 $config = include __DIR__ . '/config.php';
 
 /*DB测试*/
 \BaAGee\MySQL\DBConfig::init($config);
-\BaAGee\MySQL\DBConfig::addConfig($config,'test1');
-
 
 $builder = SimpleTable::getInstance('student_score');
+
+// 先初始化sqlRecoder
+SqlRecorder::setSaveHandler(function ($params) {
+    var_dump($params);
+    $time  = ($params['sqlInfo']['endTime'] - $params['sqlInfo']['startTime']) * 1000;
+    $cTime = ($params['sqlInfo']['connectedTime'] - $params['sqlInfo']['startTime']) * 1000;
+    $log   = sprintf("APP_NAME[%s] success[%s] cost[%s]ms connectTime[%s]ms [SQL] %s" . PHP_EOL, $params['appName'], $params['sqlInfo']['success'] ? 'ok' : 'no',
+        $time, $cTime, $params['sqlInfo']['fullSql']);
+    echo $log;
+    // die;
+}, [
+    'appName' => 'test'
+]);
 
 /*插入测试*/
 $res = $builder->insert(createStudentScoreRow(), true);
@@ -49,16 +75,6 @@ $res = $builder->fields([
 var_dump(\BaAGee\MySQL\SqlRecorder::getLastSql());
 // var_dump($res);
 // die;
-
-// 强制使用索引
-$res=$res=$builder->forceIndex('student_score_student_id_index','student_score_student_name_index')->where(
-    ['student_id'=>['=',1565246274451]]
-)->select();
-var_dump($res);
-var_dump(\BaAGee\MySQL\SqlRecorder::getLastSql());
-// die;
-//切换到另一个数据库配置
-\BaAGee\MySQL\DBConfig::switchTo('test1');
 
 $res = $builder->fields([
     'avg(chinese)', 'class_id', 'min(`age`)', 'max(math)', 'sum(biology)', 'count(student_id)'

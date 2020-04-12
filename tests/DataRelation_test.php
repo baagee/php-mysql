@@ -12,6 +12,7 @@ $config = include __DIR__ . '/config.php';
 use  BaAGee\MySQL\SimpleTable;
 
 \BaAGee\MySQL\DBConfig::init($config);
+\BaAGee\MySQL\DBConfig::addConfig($config,'test2');
 
 $studentScoreObj = SimpleTable::getInstance('student_score');
 
@@ -41,7 +42,7 @@ foreach ($studentScoreList2 as $item) {
     var_dump($item);
 }
 //
-
+\BaAGee\MySQL\DBConfig::switchTo('test2');
 
 $studentScoreList3 = $studentScoreObj->limit(3)->hasOne('class_id', 'class_group.id', ['name', 'create_time'], [], function (&$v) {
     $v['create_time'] = explode(' ', $v['create_time'])[0];

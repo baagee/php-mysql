@@ -14,10 +14,13 @@ namespace BaAGee\MySQL;
  */
 final class DBConfig
 {
+    public const DEFAULT = 'default';
     /**
      * @var array
      */
-    protected static $config = [];
+    protected static $configMap = [];
+
+    protected static $currentName = self::DEFAULT;
 
     /**
      * @var bool
@@ -37,26 +40,62 @@ final class DBConfig
 
     /**
      * 配置初始化
-     * @param array $config
+     * @param array  $config 配置数据
+     * @param string $name   名字
      * @throws \Exception
      */
-    final public static function init(array $config)
+    final public static function init(array $config, string $name = self::DEFAULT)
     {
         if (self::$isInit === false) {
-            // 只允许初始化一次 检查配置
-            self::$config = self::checkConfig($config);
             self::$isInit = true;
-            self::createSchemasDir();
+            // 只允许初始化一次 检查配置
+            $name = trim($name);
+            self::addConfig($config, $name);
+            self::$currentName = $name;
         }
+    }
+
+    /**
+     * 添加配置
+     * @param array  $config 配置
+     * @param string $name   名字
+     * @throws \Exception
+     */
+    final public static function addConfig(array $config, string $name)
+    {
+        if (empty($name)) {
+            throw new \Exception("addConfig参数name不能为空");
+        }
+        self::$configMap[$name] = self::checkConfig($config);
+    }
+
+    /**
+     * 切换到某个配置
+     * @param string $name 配置标记名字
+     * @return bool
+     * @throws \Exception
+     */
+    final public static function switchTo(string $name)
+    {
+        $name = trim($name);
+        if (empty($name)) {
+            return false;
+        }
+        if (!isset(self::$configMap[$name])) {
+            throw new \Exception(__CLASS__ . " 配置信息中不存在 " . $name . '的信息');
+        }
+        self::$currentName = $name;
+        return true;
     }
 
     /**
      * @throws \Exception
      */
-    final protected static function createSchemasDir()
+    final public static function createSchemasDir()
     {
-        $schemasCachePath = self::get('schemasCachePath');
+        $schemasCachePath = rtrim(self::get('schemasCachePath', ''), '/');
         if (!is_null($schemasCachePath) && !empty($schemasCachePath)) {
+            $schemasCachePath .= '/' . self::$currentName;
             if (!is_dir($schemasCachePath)) {
                 $res = mkdir($schemasCachePath, 0755, true);
                 if ($res == false) {
@@ -144,23 +183,34 @@ final class DBConfig
     /**
      * 获取配置
      * @param string $name
-     * @return array|mixed|null
+     * @param null   $default
+     * @return mixed|null
      * @throws \Exception
      */
-    final public static function get($name = '')
+    final public static function get($name = '', $default = null)
     {
         if (self::$isInit === false) {
             throw new \Exception(__CLASS__ . '没有初始化init');
         }
+        $config = self::$configMap[self::$currentName];
         if (empty($name)) {
             // 返回所有配置
-            return self::$config;
+            return $config;
         } else {
-            if (isset(self::$config[$name])) {
-                return self::$config[$name];
+            if (isset($config[$name])) {
+                return $config[$name];
             } else {
-                return null;
+                return $default;
             }
         }
+    }
+
+    /**
+     * 获取当前配置名字
+     * @return string
+     */
+    final public static function getCurrentName()
+    {
+        return self::$currentName;
     }
 }
