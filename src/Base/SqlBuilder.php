@@ -34,6 +34,11 @@ abstract class SqlBuilder
      */
     private $__lastPrepareSql = '';
     /**
+     * 强制使用索引
+     * @var string
+     */
+    private $__forceIndex = '';
+    /**
      * 最后一次处理sql的数据参数
      * @var array
      */
@@ -81,6 +86,7 @@ abstract class SqlBuilder
     protected function _clear()
     {
         $this->__havingConditions = '';
+        $this->__forceIndex       = '';
         $this->__orderBy          = '';
         $this->__whereConditions  = '';
         $this->__limit            = '';
@@ -372,7 +378,7 @@ abstract class SqlBuilder
         } else {
             $this->__lastPrepareSql .= $this->__fields;
         }
-        $this->__lastPrepareSql .= (' FROM `' . $this->_tableName . '`' . $this->__whereConditions . $this->__groupBy .
+        $this->__lastPrepareSql .= (' FROM `' . $this->_tableName . '`' . $this->__forceIndex . $this->__whereConditions . $this->__groupBy .
             $this->__havingConditions . $this->__orderBy . $this->__limit . $this->__lock);
         return [$this->__lastPrepareSql, $this->__lastPrepareData];
     }
@@ -495,6 +501,19 @@ abstract class SqlBuilder
         }
 
         return trim($conStr, 'AND OR');
+    }
+
+    /**
+     * 强制使用索引
+     * @param mixed ...$indexName
+     * @return $this
+     */
+    final public function forceIndex(...$indexName)
+    {
+        if (!empty($indexName)) {
+            $this->__forceIndex = " FORCE INDEX (" . implode(", ", $indexName) . ")";
+        }
+        return $this;
     }
 
     /**

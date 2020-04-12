@@ -49,6 +49,15 @@ var_dump(\BaAGee\MySQL\SqlRecorder::getLastSql());
 // var_dump($res);
 // die;
 
+// 强制使用索引
+$res=$res=$builder->forceIndex('student_score_student_id_index','student_score_student_name_index')->where(
+    ['student_id'=>['=',1565246274451]]
+)->select();
+var_dump($res);
+var_dump(\BaAGee\MySQL\SqlRecorder::getLastSql());
+// die;
+
+
 $res = $builder->fields([
     'avg(chinese)', 'class_id', 'min(`age`)', 'max(math)', 'sum(biology)', 'count(student_id)'
 ])->where(['id' => ['>', mt_rand(300, 590)]])->groupBy('class_id')->orderBy(['class_id' => 'desc'])->limit(0, 7)->select();
