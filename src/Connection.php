@@ -58,7 +58,7 @@ final class Connection
      * @return \PDO
      * @throws \Exception
      */
-    final public static function getInstance(bool $isRead): \PDO
+    final public static function getInstance(bool $isRead = false): \PDO
     {
         // 获取DB配置
         self::getDBConfig();
@@ -147,14 +147,14 @@ final class Connection
 
     /**
      * 获取数据库连接
-     * @param bool $is_read
+     * @param bool $isRead
      * @return mixed|null|\PDO
      */
-    private static function getConnection($is_read = true): \PDO
+    private static function getConnection($isRead = true): \PDO
     {
         if (isset(self::$config['slave'])) {
             // 配置了从库
-            if ($is_read) {
+            if ($isRead) {
                 // 读库
                 if (!isset(self::$_instance[self::$configName]['slave'])) {
                     //读操作选择slave
