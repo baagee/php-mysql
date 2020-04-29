@@ -88,8 +88,7 @@ final class Connection
             ];
         $dsn = sprintf('mysql:dbname=%s;host=%s;port=%d', $config['database'], $config['host'], $config['port']);
         try {
-            $pdo = new \PDO($dsn, $config['user'], $config['password'], $options);
-            return $pdo;
+            return new \PDO($dsn, $config['user'], $config['password'], $options);
         } catch (\PDOException $e) {
             if ($retryTimes < ($config['retryTimes'] ?? 0)) {
                 $retryTimes++;

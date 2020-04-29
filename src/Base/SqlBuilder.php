@@ -198,7 +198,8 @@ abstract class SqlBuilder
                 $this->__fields = ' *';
                 break;
             }
-            if (in_array($field, array_keys($this->_tableSchema['columns']))) {
+            // if (in_array($field, array_keys($this->_tableSchema['columns']))) {
+            if (isset($this->_tableSchema['columns'][$field])) {
                 $field          = trim($field, '`');
                 $this->__fields .= ', `' . trim($field, '`') . '`';
             } else {
@@ -288,7 +289,8 @@ abstract class SqlBuilder
         foreach ($data as $i => $item_array) {
             $z = '(';
             foreach ($item_array as $k => $v) {
-                if (in_array($k, array_keys($this->_tableSchema['columns']))) {
+                // if (in_array($k, array_keys($this->_tableSchema['columns']))) {
+                if (isset($this->_tableSchema['columns'][$k])) {
                     if (!in_array($k, $fields)) {
                         $fields[] = $k;
                     }
@@ -310,7 +312,7 @@ abstract class SqlBuilder
             //插入 并且设置了$onDuplicateUpdate
             $sub = '';
             foreach ($onDuplicateUpdate as $field => $value) {
-                if (in_array($field, array_keys($this->_tableSchema['columns']))) {
+                if (isset($this->_tableSchema['columns'][$field])) {
                     if ($value instanceof Expression) {
                         $value .= sprintf('%s, ', $value);
                     }
@@ -349,7 +351,7 @@ abstract class SqlBuilder
     {
         $this->__lastPrepareSql = 'UPDATE `' . $this->_tableName . '` SET ';
         foreach ($data as $field => $value) {
-            if (in_array($field, array_keys($this->_tableSchema['columns']))) {
+            if (isset($this->_tableSchema['columns'][$field])) {
                 if ($value instanceof Expression) {
                     $this->__lastPrepareSql .= sprintf('`' . $field . '` = %s, ', $value);
                 } else {
@@ -404,9 +406,9 @@ abstract class SqlBuilder
         };
         $conditionString = '';
         $k               = trim($field, '`');
-        if ($having == true || ($having == false && in_array($k, array_keys($this->_tableSchema['columns'])))) {
+        if ($having == true || ($having == false && isset($this->_tableSchema['columns'][$field]))) {
             if ($condition instanceof Expression) {
-                $conditionString .= sprintf(' `%s` %s ', $k, $condition, $op);
+                $conditionString .= sprintf(' `%s` %s %s', $k, $condition, $op);
             } elseif (is_array($condition)) {
                 if ($having) {
                     $z_k = '_h_' . $k . '_' . $uniqId(7);

@@ -191,10 +191,10 @@ class mainTest extends \PHPUnit\Framework\TestCase
             'class_id' => ['between', [1, 5]],
             'sex'      => ['=', 1],
         ])->orWhere([
-            'math'         => ['>', 60],
             'english'      => ['<', 60],
             'or',
-            'student_name' => new Expression('like \'%哈%\'')
+            'student_name' => new Expression('like \'%哈%\''),
+            'math'         => ['>', 60],
         ])->having(['`cid`' => ['>', 3]])->orHaving([
             'cid'  => ['<', 2],
             'or',
