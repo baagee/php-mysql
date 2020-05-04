@@ -35,6 +35,7 @@ class mainTest extends \PHPUnit\Framework\TestCase
     {
         $this->config = include __DIR__ . '/config.php';
         \BaAGee\MySQL\DBConfig::init($this->config);
+        \BaAGee\MySQL\DBConfig::addConfig($this->config,'mysql1');
         $this->simpleTable = SimpleTable::getInstance('student_score');
         $this->db          = \BaAGee\MySQL\DB::getInstance();
     }
@@ -129,6 +130,8 @@ class mainTest extends \PHPUnit\Framework\TestCase
         // 获取写操作链接
         $link3 = \BaAGee\MySQL\Connection::getInstance(false);
         $link4 = \BaAGee\MySQL\Connection::getInstance(false);
+        \BaAGee\MySQL\Connection::close(true);
+        \BaAGee\MySQL\Connection::close(false);
         $this->assertEquals($link1, $link2);
         $this->assertEquals($link3, $link4);
     }
@@ -180,7 +183,7 @@ class mainTest extends \PHPUnit\Framework\TestCase
 
         $res = $this->simpleTable->fields([
             'avg(chinese)', 'class_id', 'min(`age`)', 'max(math)', 'sum(biology)', 'count(student_id)'
-        ])->where(['id' => ['>', mt_rand(300, 590)]])->groupBy('class_id')->orderBy(['class_id' => 'desc'])
+        ])->forceIndex('student_score_student_id_index')->where(['id' => ['>', mt_rand(300, 590)]])->groupBy('class_id')->orderBy(['class_id' => 'desc'])
             ->limit(0, 7)->lockForUpdate()->select();
         $this->printSqlInfo(DB::getLastSql());
         // var_dump($res);
@@ -355,6 +358,11 @@ class mainTest extends \PHPUnit\Framework\TestCase
             })->select()[0];
         var_dump($studentScoreList);
         $this->assertNotEmpty($studentScoreList);
+    }
+
+    public function testSwitchTo(){
+        $res=\BaAGee\MySQL\DBConfig::switchTo('mysql1');
+        $this->assertEquals($res,true);
     }
 
     public function testGetAllFullSql()
