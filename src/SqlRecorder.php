@@ -32,16 +32,18 @@ final class SqlRecorder
     {
         self::$saveCallback = compact('callable', 'params');
         register_shutdown_function(function () {
-            try {
-                foreach (self::getAllFullSql() as $itemSql) {
-                    $params            = self::$saveCallback['params'];
-                    $params['sqlInfo'] = $itemSql;
-                    call_user_func(self::$saveCallback['callable'], $params);
-                    unset($params);
+            if (!is_null(self::$saveCallback) && is_array(self::$saveCallback)) {
+                try {
+                    foreach (self::getAllFullSql() as $itemSql) {
+                        $params = self::$saveCallback['params'];
+                        $params['sqlInfo'] = $itemSql;
+                        call_user_func(self::$saveCallback['callable'], $params);
+                        unset($params);
+                    }
+                } catch (\Throwable $e) {
+                    // 捕获所有抛出的错误 保证不会影响到后面的register_shutdown_function
+                    // TODO something
                 }
-            } catch (\Throwable $e) {
-                // 捕获所有抛出的错误 保证不会影响到后面的register_shutdown_function
-                // TODO something
             }
         });
     }
