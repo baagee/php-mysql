@@ -23,6 +23,17 @@ final class SqlRecorder
      */
     protected static $saveCallback = null;
 
+    // 默认缓存大小
+    private const DEFAULT_LOG_CACHE_SIZE = 50;
+
+    protected static $cacheSize = self::DEFAULT_LOG_CACHE_SIZE;
+
+    // 是否初始化过
+    protected static $isInit = false;
+
+    //最后一个sql信息
+    protected static $lastSql = [];
+
     /**
      * 设置sql日志保存方式
      * @param       $callable
@@ -30,22 +41,37 @@ final class SqlRecorder
      */
     public static function setSaveHandler($callable, array $params = [])
     {
+        if (self::$isInit === true) {
+            return;
+        }
+        self::$cacheSize = self::DEFAULT_LOG_CACHE_SIZE;
         self::$saveCallback = compact('callable', 'params');
         register_shutdown_function(function () {
-            if (!is_null(self::$saveCallback) && is_array(self::$saveCallback)) {
-                try {
-                    foreach (self::getAllFullSql() as $itemSql) {
-                        $params = self::$saveCallback['params'];
-                        $params['sqlInfo'] = $itemSql;
-                        call_user_func(self::$saveCallback['callable'], $params);
-                        unset($params);
-                    }
-                } catch (\Throwable $e) {
-                    // 捕获所有抛出的错误 保证不会影响到后面的register_shutdown_function
-                    // TODO something
-                }
-            }
+            self::flushLogCache();
         });
+        self::$isInit = true;
+    }
+
+    /**
+     * 记录Log并且清空缓存
+     */
+    protected static function flushLogCache()
+    {
+        if (!is_null(self::$saveCallback) && is_array(self::$saveCallback)) {
+            try {
+                foreach (self::getAllFullSql() as $itemSql) {
+                    $params = self::$saveCallback['params'];
+                    $params['sqlInfo'] = $itemSql;
+                    call_user_func(self::$saveCallback['callable'], $params);
+                    unset($params);
+                }
+            } catch (\Throwable $e) {
+                // 捕获所有抛出的错误 保证不会影响到后面的register_shutdown_function
+                // TODO something
+            }
+        }
+        self::$sqlList = [];//清空sql log缓存
+        self::$cacheSize = self::DEFAULT_LOG_CACHE_SIZE;
     }
 
     /**
@@ -62,17 +88,22 @@ final class SqlRecorder
                                   array $prepareData = [], $errMsg = '')
     {
         $row = [
-            'prepareSql'    => $prepareSql,
-            'prepareData'   => $prepareData,
-            'startTime'     => $startTime,
+            'prepareSql' => $prepareSql,
+            'prepareData' => $prepareData,
+            'startTime' => $startTime,
             'connectedTime' => $connectedTime,
-            'endTime'       => $endTime,
-            'success'       => $success,
+            'endTime' => $endTime,
+            'success' => $success,
         ];
         if (!$success) {
             $row['errorInfo'] = $errMsg;
         }
         self::$sqlList[] = $row;
+        self::$lastSql = $row;
+        self::$cacheSize -= 1;
+        if (self::$cacheSize <= 0) {//没有缓存次数时就清空记录一次
+            self::flushLogCache();
+        }
     }
 
     /**
@@ -81,8 +112,13 @@ final class SqlRecorder
      */
     public static function getLastSql()
     {
-        $end            = self::$sqlList[count(self::$sqlList) - 1];
-        $end['fullSql'] = self::replaceSqlPlaceholder($end['prepareSql'], $end['prepareData']);
+        $end = self::$lastSql;
+        if (empty($end)) {
+            return [];
+        }
+        if (!isset($end['fullSql'])) {
+            $end['fullSql'] = self::replaceSqlPlaceholder($end['prepareSql'], $end['prepareData']);
+        }
         return $end;
     }
 
@@ -109,15 +145,15 @@ final class SqlRecorder
         $fullSql = $prepareSql;
         if (strpos($fullSql, '?') !== false) {
             // 使用？占位符
-            $tmp1    = explode('?', $fullSql);
+            $tmp1 = explode('?', $fullSql);
             $fullSql = '';
-            $count   = count($tmp1);
+            $count = count($tmp1);
             for ($i = 0; $i < $count; $i++) {
                 $fullSql .= $tmp1[$i];
                 if ($i !== $count - 1) {
                     if (isset($prepareData[$i])) {
                         $value = $prepareData[$i];
-                        $type  = gettype($value);
+                        $type = gettype($value);
                         if (!in_array($type, ['integer', 'double'])) {
                             $value = '\'' . $value . '\'';
                         }
