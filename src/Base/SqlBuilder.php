@@ -203,7 +203,7 @@ abstract class SqlBuilder
                 $field          = trim($field, '`');
                 $this->__fields .= ', `' . trim($field, '`') . '`';
             } else {
-                $this->__fields .= ', ' . $field . '';
+                $this->__fields .= ', ' . $field;
             }
         }
         $this->__fields = trim($this->__fields, ',');

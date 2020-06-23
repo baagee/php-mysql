@@ -18,10 +18,6 @@ use BaAGee\MySQL\Base\DBInterface;
 final class DB extends DBAbstract implements DBInterface
 {
     /**
-     * @var \PDOStatement
-     */
-    private $PDOStatement;
-    /**
      * @var int 事务计数
      */
     private $transactionCount;
@@ -39,8 +35,8 @@ final class DB extends DBAbstract implements DBInterface
      */
     final public function query(string $sql, array $data = [])
     {
-        $this->runSql(!$this->inTransaction, $sql, $data);
-        return $this->PDOStatement->fetchAll(\PDO::FETCH_ASSOC);
+        $stmt = $this->runSql(!$this->inTransaction, $sql, $data);
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 
     /**
@@ -52,8 +48,8 @@ final class DB extends DBAbstract implements DBInterface
      */
     final public function yieldQuery($sql, array $data = [])
     {
-        $this->runSql(!$this->inTransaction, $sql, $data);
-        while ($row = $this->PDOStatement->fetch(\PDO::FETCH_ASSOC)) {
+        $stmt = $this->runSql(!$this->inTransaction, $sql, $data);
+        while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
             yield $row;
         }
     }
@@ -64,29 +60,31 @@ final class DB extends DBAbstract implements DBInterface
      * @param string $sql
      * @param array  $data
      * @param int    $retryTimes
+     * @return \PDOStatement
      * @throws \Exception
      */
     private function runSql(bool $isRead, string $sql, array $data = [], $retryTimes = 0)
     {
-        $sTime      = microtime(true);
+        $sTime = microtime(true);
         $connection = self::getConnection($isRead);
-        $cTime      = microtime(true);
+        $cTime = microtime(true);
         try {
-            $this->PDOStatement = $connection->prepare($sql);
-            if ($this->PDOStatement === false) {
+            $stmt = $connection->prepare($sql);
+            if ($stmt === false) {
                 $errorInfo = $connection->errorInfo();
                 throw new \PDOException($errorInfo[2], $errorInfo[1]);
             }
-            $this->PDOStatement->execute($data);
-            $errorInfo = $this->PDOStatement->errorInfo();
+            $stmt->execute($data);
+            $errorInfo = $stmt->errorInfo();
             if ($errorInfo[0] != '00000') {
                 throw new \PDOException($errorInfo[2], $errorInfo[1]);
             }
             $eTime = microtime(true);
             SqlRecorder::record($sql, $sTime, $cTime, $eTime, true, $data);
+            return $stmt;
         } catch (\PDOException $e) {
             $errMsg = $e->getMessage();//记录失败原因
-            $eTime  = microtime(true);
+            $eTime = microtime(true);
             SqlRecorder::record($sql, $sTime, $cTime, $eTime, false, $data, $errMsg);
             if ($this->isBreak($e)) {
                 // 重试三次
@@ -99,7 +97,7 @@ final class DB extends DBAbstract implements DBInterface
                 if ($retryTimes < (int)($rtc['retryTimes'] ?? 3)) {
                     self::closeConnection($isRead);
                     $retryTimes++;
-                    $this->runSql($isRead, $sql, $data, $retryTimes);
+                    return $this->runSql($isRead, $sql, $data, $retryTimes);
                 }
             }
             throw new \PDOException($errMsg . ' [SQL: ' . $sql . ']', $e->getCode());
@@ -126,7 +124,7 @@ final class DB extends DBAbstract implements DBInterface
             'Resource deadlock avoided',
             'failed with errno',
         ];
-        $error         = $e->getMessage();
+        $error = $e->getMessage();
         foreach ($breakMatchStr as $msg) {
             if (false !== stripos($error, $msg)) {
                 return true;
@@ -144,8 +142,8 @@ final class DB extends DBAbstract implements DBInterface
      */
     final public function execute(string $sql, array $data = [])
     {
-        $this->runSql(false, $sql, $data);
-        return $this->PDOStatement->rowCount();
+        $stmt = $this->runSql(false, $sql, $data);
+        return $stmt->rowCount();
     }
 
     /**
