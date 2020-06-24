@@ -334,4 +334,64 @@ var_dump($res);
 
 echo ((microtime(true) - $st) * 1000) . PHP_EOL;
 ```
+
+### 支持切换数据库配置
+```php
+include __DIR__ . '/../vendor/autoload.php';
+
+use BaAGee\MySQL\SimpleTable;
+use BaAGee\MySQL\Expression;
+
+
+$config = include __DIR__ . '/config.php';
+
+/*DB测试*/
+\BaAGee\MySQL\DBConfig::init($config);//初始化默认配置
+\BaAGee\MySQL\DBConfig::addConfig($config, 'test1');//加入新配置
+\BaAGee\MySQL\DBConfig::addConfig($config, 'test2');// 加入新配置
+$names = [\BaAGee\MySQL\DBConfig::getCurrentName(), 'test1', 'test2'];// 当前所有配置名
+foreach ($names as $name) {
+    \BaAGee\MySQL\DBConfig::switchTo($name);//切换到其中一个配置
+    echo '切换到：' . $name . PHP_EOL;
+
+    $builder = SimpleTable::getInstance('student_score');
+
+    /*插入测试*/
+    $res = $builder->insert(createStudentScoreRow(), true);
+    var_dump(\BaAGee\MySQL\DB::getLastSql());
+    var_dump($res);
+
+    /*批量插入测试*/
+    $rows = [];
+    for ($i = 0; $i < 3; $i++) {
+        $rows[] = createStudentScoreRow();
+    }
+    $res = $builder->insert($rows, true);
+    var_dump(\BaAGee\MySQL\DB::getLastSql());
+    var_dump($res);
+
+    /*查询测试*/
+    $res = $builder->fields([
+        'id', 'student_name', 'student_id', 'chinese', 'english', 'math', 'biology', 'history', 'class_id', 'age', 'sex'
+    ])->where([
+        'history' => ['>', '60'],
+        'class_id' => ['in', [1, 2, 3, 4]],
+        'or',
+        (new Expression('id % 2 = 0'))
+    ])->where([
+        'age' => ['=', 18]
+    ])->orderBy(['id' => 'desc'])->limit(0, 2)->groupBy('student_name')->lockInShareMode()->select(false);
+    var_dump(\BaAGee\MySQL\SqlRecorder::getLastSql());
+    // var_dump($res);
+    // die;
+
+    // 强制使用索引
+    $res = $res = $builder->forceIndex('student_score_student_id_index', 'student_score_student_name_index')->where(
+        ['student_id' => ['=', 1565246274451]]
+    )->select();
+    var_dump($res);
+    var_dump(\BaAGee\MySQL\SqlRecorder::getLastSql());
+    // die;
+}
+```
 ### 具体使用见tests目录

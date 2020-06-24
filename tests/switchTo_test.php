@@ -8,7 +8,7 @@
 $st = microtime(true);
 include __DIR__ . '/../vendor/autoload.php';
 
-use  BaAGee\MySQL\SimpleTable;
+use BaAGee\MySQL\SimpleTable;
 use BaAGee\MySQL\Expression;
 
 
