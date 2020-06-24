@@ -12,6 +12,12 @@ use BaAGee\MySQL\Base\SingletonTrait;
 
 /**
  * Class FasterTable
+ * @method sum(array $conditions, array $columns, array $groupBy = [], array $orderBy = [], bool $yield = false)
+ * @method min(array $conditions, array $columns, array $groupBy = [], array $orderBy = [], bool $yield = false)
+ * @method max(array $conditions, array $columns, array $groupBy = [], array $orderBy = [], bool $yield = false)
+ * @method avg(array $conditions, array $columns, array $groupBy = [], array $orderBy = [], bool $yield = false)
+ * @method count(array $conditions, array $columns, array $groupBy = [], array $orderBy = [], bool $yield = false)
+ * @method complex(array $conditions, array $type2columns, array $groupBy = [], array $orderBy = [], bool $yield = false)
  * @package BaAGee\MySQL
  */
 class FasterTable
@@ -258,47 +264,23 @@ class FasterTable
     }
 
     /**
-     * 返回符合条件的行数
-     * @param array  $conditions 条件
-     * @param string $column     列
-     * @param array  $groupBy    分组
-     * @param array  $orderBy    排序
-     * @param bool   $yield      是否返回生成器
+     * 单种统计类型
+     * @param string $name      统计类型
+     * @param array  $arguments 参数
      * @return array|\Generator
      * @throws \Exception
      */
-    public function count(array $conditions, string $column = '1', array $groupBy = [], array $orderBy = [], bool $yield = false)
+    protected function singleTypeCount($name, $arguments)
     {
-        $this->simpleTable->where($conditions);
-        $fields = [sprintf('count(%s) as _count', $column)];
-        if (!empty($groupBy)) {
-            foreach ($groupBy as $value) {
-                $this->simpleTable->groupBy($value);
-                $fields[] = $value;
-            }
+        $conditions = $arguments[0] ?? [];
+        $columns = $arguments[1] ?? [];
+        if (empty($columns)) {
+            throw new \Exception('列不能为空');
         }
-        if (!empty($orderBy)) {
-            foreach ($orderBy as $field => $value) {
-                $fields[] = $field;
-            }
-            $this->simpleTable->orderBy($orderBy);
-        }
-        $fields = array_values(array_unique($fields));
-        return $this->simpleTable->fields($fields)->select($yield);
-    }
-
-    /**
-     * 求符合条件这些列的和
-     * @param array $conditions 条件
-     * @param array $columns    列
-     * @param array $groupBy    分组
-     * @param array $orderBy    排序
-     * @param bool  $yield      是否返回生成器
-     * @return array|\Generator
-     * @throws \Exception
-     */
-    public function sum(array $conditions, array $columns, array $groupBy = [], array $orderBy = [], bool $yield = false)
-    {
+        $schemas = $this->simpleTable->getSchema()['columns'] ?? [];
+        $groupBy = $arguments[2] ?? [];
+        $orderBy = $arguments[3] ?? [];
+        $yield = $arguments[4] ?? false;
         $this->simpleTable->where($conditions);
         $fields = [];
         if (!empty($groupBy)) {
@@ -308,7 +290,11 @@ class FasterTable
             }
         }
         foreach ($columns as $column) {
-            $fields[] = sprintf('sum(`%s`) as %s_sum', $column, $column);
+            if (isset($schemas[$column])) {
+                $fields[] = sprintf('%s(`%s`) as %s_%s', strtoupper($name), $column, $column, $name);
+            } else {
+                $fields[] = sprintf('%s(%s) as %s_%s', strtoupper($name), $column, $column, $name);
+            }
         }
         if (!empty($orderBy)) {
             foreach ($orderBy as $field => $value) {
@@ -316,22 +302,31 @@ class FasterTable
             }
             $this->simpleTable->orderBy($orderBy);
         }
-        $fields = array_values(array_unique($fields));
-        return $this->simpleTable->fields($fields)->select(false);
+        return $this->simpleTable->fields(array_values(array_unique($fields)))->select($yield);
     }
 
     /**
-     * 求符合条件这些列的平均值
-     * @param array $conditions 条件
-     * @param array $columns    列
-     * @param array $groupBy    分组
-     * @param array $orderBy    排序
-     * @param bool  $yield      是否返回生成器
+     * 多种数据统计方式
+     * @param string $name
+     * @param array  $arguments
      * @return array|\Generator
      * @throws \Exception
      */
-    public function avg(array $conditions, array $columns, array $groupBy = [], array $orderBy = [], $yield = false)
+    protected function multiTypeCount($name, $arguments)
     {
+        if ($name !== 'complex') {
+            throw new \Exception('调用来源不合法');
+        }
+        $conditions = $arguments[0] ?? [];
+        $type2columns = $arguments[1] ?? [];
+        if (empty($type2columns)) {
+            throw new \Exception('统计方式不能为空');
+        }
+        $schemas = $this->simpleTable->getSchema()['columns'] ?? [];
+        $groupBy = $arguments[2] ?? [];
+        $orderBy = $arguments[3] ?? [];
+        $yield = $arguments[4] ?? false;
+
         $this->simpleTable->where($conditions);
         $fields = [];
         if (!empty($groupBy)) {
@@ -340,8 +335,20 @@ class FasterTable
                 $fields[] = $value;
             }
         }
-        foreach ($columns as $column) {
-            $fields[] = sprintf('avg(`%s`) as %s_avg', $column, $column);
+        foreach ($type2columns as $type => $columns) {
+            if (is_array($columns)) {
+                foreach ($columns as $column) {
+                    if (isset($schemas[$column])) {
+                        $fields[] = sprintf('%s(`%s`) as %s_%s', strtoupper($type), $column, $column, $type);
+                    } else {
+                        $fields[] = sprintf('%s(%s) as %s_%s', strtoupper($type), $column, $column, $type);
+                    }
+                }
+            } elseif (isset($schemas[$columns])) {
+                $fields[] = sprintf('%s(`%s`) as %s_%s', strtoupper($type), $columns, $columns, $type);
+            } elseif (is_string($columns)) {
+                $fields[] = sprintf('%s(%s) as %s_%s', strtoupper($type), $columns, $columns, $type);
+            }
         }
         if (!empty($orderBy)) {
             foreach ($orderBy as $field => $value) {
@@ -349,73 +356,23 @@ class FasterTable
             }
             $this->simpleTable->orderBy($orderBy);
         }
-        $fields = array_values(array_unique($fields));
-        return $this->simpleTable->fields($fields)->select($yield);
+        return $this->simpleTable->fields(array_values(array_unique($fields)))->select($yield);
     }
 
     /**
-     * 求符合条件这些列的最大值
-     * @param array $conditions 条件
-     * @param array $columns    列
-     * @param array $groupBy    分组
-     * @param array $orderBy    排序
-     * @param bool  $yield      是否返回生成器
+     * @param string $name
+     * @param array  $arguments
      * @return array|\Generator
      * @throws \Exception
      */
-    public function max(array $conditions, array $columns, array $groupBy = [], array $orderBy = [], bool $yield = false)
+    public function __call(string $name, $arguments)
     {
-        $this->simpleTable->where($conditions);
-        $fields = [];
-        if (!empty($groupBy)) {
-            foreach ($groupBy as $value) {
-                $this->simpleTable->groupBy($value);
-                $fields[] = $value;
-            }
+        $name = strtolower($name);
+        if (in_array($name, ['max', 'min', 'avg', 'sum', 'count'])) {
+            return $this->singleTypeCount($name, $arguments);
+        } elseif ($name == 'complex') {
+            //多种统计分析
+            return $this->multiTypeCount($name, $arguments);
         }
-        foreach ($columns as $column) {
-            $fields[] = sprintf('max(`%s`) as %s_max', $column, $column);
-        }
-        if (!empty($orderBy)) {
-            foreach ($orderBy as $field => $value) {
-                $fields[] = $field;
-            }
-            $this->simpleTable->orderBy($orderBy);
-        }
-        $fields = array_values(array_unique($fields));
-        return $this->simpleTable->fields($fields)->select($yield);
-    }
-
-    /**
-     * 求符合条件这些列的最小值
-     * @param array $conditions 条件
-     * @param array $columns    列
-     * @param array $groupBy    分组
-     * @param array $orderBy    排序
-     * @param bool  $yield      是否返回生成器
-     * @return array|\Generator
-     * @throws \Exception
-     */
-    public function min(array $conditions, array $columns, array $groupBy = [], array $orderBy = [], bool $yield = false)
-    {
-        $this->simpleTable->where($conditions);
-        $fields = [];
-        if (!empty($groupBy)) {
-            foreach ($groupBy as $value) {
-                $this->simpleTable->groupBy($value);
-                $fields[] = $value;
-            }
-        }
-        foreach ($columns as $column) {
-            $fields[] = sprintf('min(`%s`) as %s_min', $column, $column);
-        }
-        if (!empty($orderBy)) {
-            foreach ($orderBy as $field => $value) {
-                $fields[] = $field;
-            }
-            $this->simpleTable->orderBy($orderBy);
-        }
-        $fields = array_values(array_unique($fields));
-        return $this->simpleTable->fields($fields)->select($yield);
     }
 }

@@ -48,7 +48,9 @@ class mainTest extends \PHPUnit\Framework\TestCase
     public function testTableInsert()
     {
         /*插入测试*/
-        $res = $this->simpleTable->insert($this->createStudentScoreRow(), true, $this->createStudentScoreRow());
+        $row = $this->createStudentScoreRow();
+        $row['id'] = mt_rand(3000, 4000);
+        $res = $this->simpleTable->insert($row, true, $this->createStudentScoreRow());
         $this->printSqlInfo(DB::getLastSql());
         $res = $this->simpleTable->insert($this->createStudentScoreRow(), true);
         $this->printSqlInfo(DB::getLastSql());
@@ -60,11 +62,33 @@ class mainTest extends \PHPUnit\Framework\TestCase
         /*批量插入测试*/
         $rows = [];
         for ($i = 0; $i < 3; $i++) {
-            $rows[] = $this->createStudentScoreRow();
+            $r = $this->createStudentScoreRow();
+            $rows[] = $r;
         }
         $res = $this->simpleTable->insert($rows, true);
         $this->printSqlInfo(DB::getLastSql());
-        $res = $this->simpleTable->insert($rows, false, $this->createStudentScoreRow());
+
+        $rows = [];
+        for ($i = 0; $i < 3; $i++) {
+            $r = $this->createStudentScoreRow();
+            $r['id'] = mt_rand(3000, 4000);
+            $rows[] = $r;
+        }
+        $onDuplicateUpdate = [
+            'student_name' => new Expression('VALUES(student_name)'),
+            'student_id' => new Expression('VALUES(student_id)'),
+            'chinese' => new Expression('VALUES(chinese)'),
+            'english' => new Expression('VALUES(english)'),
+            'math' => new Expression('VALUES(math)'),
+            'biology' => new Expression('VALUES(biology)'),
+            'history' => new Expression('VALUES(history)'),
+            'class_id' => new Expression('VALUES(class_id)'),
+            'age' => new Expression('VALUES(age)'),
+            'sex' => new Expression('VALUES(sex)'),
+            'create_time' => time(),
+            'update_time' => time(),
+        ];
+        $res = $this->simpleTable->insert($rows, false, $onDuplicateUpdate);
         $this->printSqlInfo(DB::getLastSql());
         var_dump($res);
         $this->assertNotEmpty('$res');
@@ -420,8 +444,9 @@ class mainTest extends \PHPUnit\Framework\TestCase
         $res = $student->findRows(['english' => ['=', mt_rand(90, 100)]], ['*'], ['id' => 'desc'], 10, 10);
         var_dump($res);
 
+
         /*聚合查询测试*/
-        $res = $student->count(['is_delete' => ['=', 0]], '1', ['class_id', 'sex'], ['class_id' => 'asc', 'sex' => 'desc']);
+        $res = $student->count(['is_delete' => ['=', 0]], ['1'], ['class_id', 'sex'], ['class_id' => 'asc', 'sex' => 'desc']);
         var_dump($res);
         $res = $student->sum(['is_delete' => ['=', 0]], ['english', 'math', 'history'], ['class_id', 'sex'], ['class_id' => 'asc', 'sex' => 'desc']);
         var_dump($res);
@@ -434,6 +459,16 @@ class mainTest extends \PHPUnit\Framework\TestCase
         // var_dump($res);
         $res = $student->max(['is_delete' => ['=', 0]], ['english', 'math'], ['class_id', 'sex'], ['class_id' => 'asc', 'sex' => 'desc']);
         // var_dump($res);
+
+        $res = $student->complex(['is_delete' => ['=', 0]], [
+            'sum' => ['chinese', 'math', 'history', 'biology', 'age'],
+            'min' => ['chinese', 'math', 'history', 'biology', 'age'],
+            'max' => ['chinese', 'math', 'history', 'biology', 'age'],
+            'avg' => ['chinese', 'math', 'history', 'biology', 'age'],
+            'count' => '1'
+        ], ['class_id', 'sex'], ['class_id' => 'asc', 'sex' => 'desc']);
+        var_dump($res);
+
 
         $this->assertNotEmpty('sdfgd');
     }

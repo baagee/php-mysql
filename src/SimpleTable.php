@@ -105,6 +105,15 @@ final class SimpleTable extends SqlBuilder implements SimpleTableInterface
     }
 
     /**
+     * 获取表结构
+     * @return array|mixed
+     */
+    final public function getSchema()
+    {
+        return $this->_tableSchema;
+    }
+
+    /**
      * 获取操作一个表的简单Table类
      * @param $tableName
      * @return $this

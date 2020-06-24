@@ -213,61 +213,125 @@ $studentScoreList2 = $studentScoreObj->limit(3)->hasOne('class_id', 'class_group
     ])->select();
 ```
 
-### 稍微封装成Model
+### 快捷方法
 ```php
+ini_set('display_errors', 1);
+$st = microtime(true);
 include __DIR__ . '/../vendor/autoload.php';
 
-/**
- * Class BaseModel
- */
-abstract class BaseModel
-{
-    /**
-     * @var string
-     */
-    protected $table = '';
+use BaAGee\MySQL\SqlRecorder;
 
-    /**
-     * @var \BaAGee\MySQL\SimpleTable
-     */
-    protected $simpleTable = null;
-
-    public function __construct()
-    {
-        $this->simpleTable = \BaAGee\MySQL\SimpleTable::getInstance($this->table);
+$uniqId = function ($len) {
+    $string = 'qazwsxedcrfvtgbyhnujmikolp0129384756';
+    $count = strlen($string) - 1;
+    $return = '';
+    for ($i = 0; $i < $len; $i++) {
+        $return .= $string{mt_rand(0, $count)};
     }
+    return $return;
+};
+
+$config = include __DIR__ . '/config.php';
+
+/*DB测试*/
+\BaAGee\MySQL\DBConfig::init($config);
+
+// 先初始化sqlRecoder
+SqlRecorder::setSaveHandler(function ($params) {
+    $time = ($params['sqlInfo']['endTime'] - $params['sqlInfo']['startTime']) * 1000;
+    $cTime = ($params['sqlInfo']['connectedTime'] - $params['sqlInfo']['startTime']) * 1000;
+    $log = sprintf("success[%s] cost[%s]ms connectTime[%s]ms [SQL] %s" . PHP_EOL, $params['sqlInfo']['success'] ? 'ok' : 'no',
+        $time, $cTime, $params['sqlInfo']['fullSql']);
+    echo $log;
+    // die;
+});
+
+/*插入测试*/
+$student = \BaAGee\MySQL\FasterTable::getInstance('student_score');
+
+$student->insert(createStudentScoreRow(), false);
+$r = createStudentScoreRow();
+$r['id'] = mt_rand(3000, 3100);
+// 组建冲突支持自动更新
+$student->insert($r, true, [
+    'english' => new \BaAGee\MySQL\Expression('Values(english)'),
+    'math' => new \BaAGee\MySQL\Expression('Values(math)'),
+    'age' => new \BaAGee\MySQL\Expression('Values(age)'),
+    'update_time' => time(),
+]);
+var_dump(SqlRecorder::getLastSql());
+// die;
+$rows = [];
+for ($i = 0; $i <= 2; $i++) {
+    $rows[] = createStudentScoreRow();
+}
+$student->insert($rows, false);
+$student->replace(createStudentScoreRow());
+$rows = [];
+for ($i = 0; $i <= 2; $i++) {
+    $rows[] = createStudentScoreRow();
+}
+$student->replace($rows);
+
+/*删除测试*/
+$student->delete(['id' => ['=', mt_rand(2700, 2999)]]);
+
+/*修改测试*/
+$student->update(['student_name' => createStudentName()], ['id' => ['=', mt_rand(3000, 3300)]]);
+$student->increment('english', ['id' => ['=', mt_rand(3000, 3300)]]);
+$student->increment('english', ['id' => ['=', mt_rand(3000, 3300)]], 2);
+$student->decrement('english', ['id' => ['=', mt_rand(3000, 3300)]]);
+$student->decrement('english', ['id' => ['=', mt_rand(3000, 3300)]], 2);
+/*查询测试*/
+$res = $student->findRows(['id' => ['=', mt_rand(2900, 3300)]]);
+var_dump($res);
+$res = $student->findRow(['id' => ['=', mt_rand(2900, 3300)]]);
+var_dump($res);
+$res = $student->findColumn('student_name', ['id' => ['=', mt_rand(2900, 3300)]]);
+var_dump($res);
+$res = $student->findValue('student_name', ['id' => ['=', mt_rand(2900, 3300)]]);
+var_dump($res);
+$res = $student->yieldRows(['chinese' => ['=', mt_rand(90, 99)]]);
+foreach ($res as $re) {
+    var_dump($re);
 }
 
-/**
- * Class ArticleModel
- */
-class ArticleModel extends BaseModel
-{
-    /**
-     * @var string
-     */
-    protected $table = 'article';
-
-    /**
-     * @param $id
-     * @return array|Generator
-     * @throws Exception
-     */
-    public function getOne($id)
-    {
-        return $this->simpleTable->where([
-                'id' => ['=', $id]
-            ])->select()[0] ?? [];
-    }
+$res = $student->yieldColumn('student_name', ['chinese' => ['=', mt_rand(90, 99)]]);
+foreach ($res as $re) {
+    var_dump($re);
 }
 
-/*DB初始化*/
-\BaAGee\MySQL\DBConfig::init(include __DIR__ . '/config.php');
 
-$article = new ArticleModel();
-var_dump($article->getOne(490));
+$res = $student->exists(['id' => ['=', mt_rand(3000, 3100)]]);
+var_dump($res);
 
-echo 'OVER' . PHP_EOL;
+$res = $student->findRows(['english' => ['=', mt_rand(90, 100)]], ['*'], ['id' => 'desc'], 10, 10);
+var_dump($res);
+
+/*聚合查询测试*/
+$res = $student->count(['is_delete' => ['=', 0]], ['1'], ['class_id', 'sex'], ['class_id' => 'asc', 'sex' => 'desc']);
+var_dump($res);
+$res = $student->sum(['is_delete' => ['=', 0]], ['english', 'math', 'history'], ['class_id', 'sex'], ['class_id' => 'asc', 'sex' => 'desc']);
+var_dump($res);
+$res = $student->avg(['is_delete' => ['=', 0]], ['english', 'history'], ['class_id', 'sex'], ['class_id' => 'asc', 'sex' => 'desc']);
+// var_dump($res);
+$res = $student->min(['is_delete' => ['=', 0]], ['english', 'biology'], ['class_id', 'sex'], ['class_id' => 'asc', 'sex' => 'desc']);
+foreach ($res as $re) {
+    var_dump($re);
+}
+// var_dump($res);
+$res = $student->max(['is_delete' => ['=', 0]], ['english', 'math'], ['class_id', 'sex'], ['class_id' => 'asc', 'sex' => 'desc']);
+// var_dump($res);
+
+$res = $student->complex(['is_delete' => ['=', 0]], [
+    'sum' => ['chinese', 'math', 'history', 'biology', 'age'],
+    'min' => ['chinese', 'math', 'history', 'biology', 'age'],
+    'max' => ['chinese', 'math', 'history', 'biology', 'age'],
+    'avg' => ['chinese', 'math', 'history', 'biology', 'age'],
+    'count' => '1'
+], ['class_id', 'sex'], ['class_id' => 'asc', 'sex' => 'desc']);
+var_dump($res);
+
+echo ((microtime(true) - $st) * 1000) . PHP_EOL;
 ```
-
 ### 具体使用见tests目录

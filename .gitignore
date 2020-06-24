@@ -1,0 +1,6 @@
+.idea
+vendor
+tests/codeCoverage
+tests/log
+tests/schemas
+composer.phar

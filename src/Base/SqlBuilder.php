@@ -314,10 +314,12 @@ abstract class SqlBuilder
             foreach ($onDuplicateUpdate as $field => $value) {
                 if (isset($this->_tableSchema['columns'][$field])) {
                     if ($value instanceof Expression) {
-                        $value .= sprintf('%s, ', $value);
+                        // $value .= sprintf('%s, ', $value);
+                        $sub .= sprintf('`%s` = %s, ', $field, $value);
+                    } else {
+                        $sub .= sprintf('`%s` = :%s_odu, ', $field, $field);
+                        $this->__lastPrepareData[':' . $field . '_odu'] = $value;
                     }
-                    $sub                                            .= sprintf('`%s` = :%s_odu, ', $field, $field);
-                    $this->__lastPrepareData[':' . $field . '_odu'] = $value;
                 }
             }
 

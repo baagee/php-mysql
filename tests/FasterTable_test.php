@@ -40,7 +40,16 @@ SqlRecorder::setSaveHandler(function ($params) {
 $student = \BaAGee\MySQL\FasterTable::getInstance('student_score');
 
 $student->insert(createStudentScoreRow(), false);
-$student->insert(createStudentScoreRow(), true, ['english' => 100]);
+$r = createStudentScoreRow();
+$r['id'] = mt_rand(3000, 3100);
+$student->insert($r, true, [
+    'english' => new \BaAGee\MySQL\Expression('Values(english)'),
+    'math' => new \BaAGee\MySQL\Expression('Values(math)'),
+    'age' => new \BaAGee\MySQL\Expression('Values(age)'),
+    'update_time' => time(),
+]);
+var_dump(SqlRecorder::getLastSql());
+// die;
 $rows = [];
 for ($i = 0; $i <= 2; $i++) {
     $rows[] = createStudentScoreRow();
@@ -89,7 +98,7 @@ $res = $student->findRows(['english' => ['=', mt_rand(90, 100)]], ['*'], ['id' =
 var_dump($res);
 
 /*聚合查询测试*/
-$res = $student->count(['is_delete' => ['=', 0]], '1', ['class_id', 'sex'], ['class_id' => 'asc', 'sex' => 'desc']);
+$res = $student->count(['is_delete' => ['=', 0]], ['1'], ['class_id', 'sex'], ['class_id' => 'asc', 'sex' => 'desc']);
 var_dump($res);
 $res = $student->sum(['is_delete' => ['=', 0]], ['english', 'math', 'history'], ['class_id', 'sex'], ['class_id' => 'asc', 'sex' => 'desc']);
 var_dump($res);
@@ -102,6 +111,15 @@ foreach ($res as $re) {
 // var_dump($res);
 $res = $student->max(['is_delete' => ['=', 0]], ['english', 'math'], ['class_id', 'sex'], ['class_id' => 'asc', 'sex' => 'desc']);
 // var_dump($res);
+
+$res = $student->complex(['is_delete' => ['=', 0]], [
+    'sum' => ['chinese', 'math', 'history', 'biology', 'age'],
+    'min' => ['chinese', 'math', 'history', 'biology', 'age'],
+    'max' => ['chinese', 'math', 'history', 'biology', 'age'],
+    'avg' => ['chinese', 'math', 'history', 'biology', 'age'],
+    'count' => '1'
+], ['class_id', 'sex'], ['class_id' => 'asc', 'sex' => 'desc']);
+var_dump($res);
 
 function createStudentScoreRow()
 {
