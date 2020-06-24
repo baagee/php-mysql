@@ -35,9 +35,9 @@ class mainTest extends \PHPUnit\Framework\TestCase
     {
         $this->config = include __DIR__ . '/config.php';
         \BaAGee\MySQL\DBConfig::init($this->config);
-        \BaAGee\MySQL\DBConfig::addConfig($this->config,'mysql1');
+        \BaAGee\MySQL\DBConfig::addConfig($this->config, 'mysql1');
         $this->simpleTable = SimpleTable::getInstance('student_score');
-        $this->db          = \BaAGee\MySQL\DB::getInstance();
+        $this->db = \BaAGee\MySQL\DB::getInstance();
     }
 
     protected function printSqlInfo($infoArr)
@@ -87,12 +87,12 @@ class mainTest extends \PHPUnit\Framework\TestCase
         var_dump($res);
 
         $res = $this->simpleTable->where([
-            'id'   => ['=', mt_rand(390, 600)],
+            'id' => ['=', mt_rand(390, 600)],
             'or',
             'math' => ['between', [90.2, 99.9]]
         ])->update([
             'english' => (new Expression('english + 1')),
-            'math'    => (new Expression('math - 1')),
+            'math' => (new Expression('math - 1')),
         ]);
         var_dump('递增递减结果：', $res);
         $this->printSqlInfo(DB::getLastSql());
@@ -148,7 +148,7 @@ class mainTest extends \PHPUnit\Framework\TestCase
             'student_name', '`student_id`', 'chinese', 'english', 'math', 'biology', 'history', 'class_id', 'age', 'sex'
         ])->where([
             [
-                'history'  => ['>', '60'],
+                'history' => ['>', '60'],
                 'or',
                 'class_id' => ['in', [1, 2, 3, 4]]
             ],
@@ -192,14 +192,14 @@ class mainTest extends \PHPUnit\Framework\TestCase
             'student_name', 'math', 'english', '`class_id` as cid', 'age', 'sex'
         ])->where([
             'class_id' => ['between', [1, 5]],
-            'sex'      => ['=', 1],
+            'sex' => ['=', 1],
         ])->orWhere([
-            'english'      => ['<', 60],
+            'english' => ['<', 60],
             'or',
             'student_name' => new Expression('like \'%哈%\''),
-            'math'         => ['>', 60],
+            'math' => ['>', 60],
         ])->having(['`cid`' => ['>', 3]])->orHaving([
-            'cid'  => ['<', 2],
+            'cid' => ['<', 2],
             'or',
             [
                 'sex' => ['=', 0],
@@ -261,7 +261,7 @@ class mainTest extends \PHPUnit\Framework\TestCase
     public function test3()
     {
         try {
-            $sql      = 'INSERT INTO article(id,user_id1,title,content,tag,create_time) values 
+            $sql = 'INSERT INTO article(id,user_id1,title,content,tag,create_time) values 
 (null ,:user_id,:title,:content,:tag,:create_time)';
             $userData = $this->createArticleRow();
             $this->db->execute($sql, $userData);
@@ -323,7 +323,7 @@ class mainTest extends \PHPUnit\Framework\TestCase
     public function testDataRelation()
     {
         $studentScoreList = $this->simpleTable->limit(3)->select();
-        $relationObj      = new \BaAGee\MySQL\DataRelation($studentScoreList);
+        $relationObj = new \BaAGee\MySQL\DataRelation($studentScoreList);
         $relationObj->hasOne('class_id', 'class_group.id', ['name', 'create_time'], [], function (&$v) {
             $v['create_time'] = explode(' ', $v['create_time'])[0];
         })->hasMany('student_id', 'article.user_id', ['tag'], [new \BaAGee\MySQL\Expression('id%2=0')]);
@@ -360,9 +360,82 @@ class mainTest extends \PHPUnit\Framework\TestCase
         $this->assertNotEmpty($studentScoreList);
     }
 
-    public function testSwitchTo(){
-        $res=\BaAGee\MySQL\DBConfig::switchTo('mysql1');
-        $this->assertEquals($res,true);
+    public function testSwitchTo()
+    {
+        $res = \BaAGee\MySQL\DBConfig::switchTo('mysql1');
+        $this->assertEquals($res, true);
+    }
+
+    public function testFasterTable()
+    {
+        /*插入测试*/
+        $student = \BaAGee\MySQL\FasterTable::getInstance('student_score');
+
+        $student->insert($this->createStudentScoreRow(), false);
+        $student->insert($this->createStudentScoreRow(), true, ['english' => 100]);
+        $rows = [];
+        for ($i = 0; $i <= 2; $i++) {
+            $rows[] = $this->createStudentScoreRow();
+        }
+        $student->insert($rows, false);
+        $student->replace($this->createStudentScoreRow());
+        $rows = [];
+        for ($i = 0; $i <= 2; $i++) {
+            $rows[] = $this->createStudentScoreRow();
+        }
+        $student->replace($rows);
+
+        /*删除测试*/
+        $student->delete(['id' => ['=', mt_rand(2700, 2999)]]);
+
+        /*修改测试*/
+        $student->update(['student_name' => $this->createStudentName()], ['id' => ['=', mt_rand(3000, 3300)]]);
+        $student->increment('english', ['id' => ['=', mt_rand(3000, 3300)]]);
+        $student->increment('english', ['id' => ['=', mt_rand(3000, 3300)]], 2);
+        $student->decrement('english', ['id' => ['=', mt_rand(3000, 3300)]]);
+        $student->decrement('english', ['id' => ['=', mt_rand(3000, 3300)]], 2);
+        /*查询测试*/
+        $res = $student->findRows(['id' => ['=', mt_rand(2900, 3300)]]);
+        var_dump($res);
+        $res = $student->findRow(['id' => ['=', mt_rand(2900, 3300)]]);
+        var_dump($res);
+        $res = $student->findColumn('student_name', ['id' => ['=', mt_rand(2900, 3300)]]);
+        var_dump($res);
+        $res = $student->findValue('student_name', ['id' => ['=', mt_rand(2900, 3300)]]);
+        var_dump($res);
+        $res = $student->yieldRows(['chinese' => ['=', mt_rand(90, 99)]]);
+        foreach ($res as $re) {
+            var_dump($re);
+        }
+
+        $res = $student->yieldColumn('student_name', ['chinese' => ['=', mt_rand(90, 99)]]);
+        foreach ($res as $re) {
+            var_dump($re);
+        }
+
+
+        $res = $student->exists(['id' => ['=', mt_rand(3000, 3100)]]);
+        var_dump($res);
+
+        $res = $student->findRows(['english' => ['=', mt_rand(90, 100)]], ['*'], ['id' => 'desc'], 10, 10);
+        var_dump($res);
+
+        /*聚合查询测试*/
+        $res = $student->count(['is_delete' => ['=', 0]], '1', ['class_id', 'sex'], ['class_id' => 'asc', 'sex' => 'desc']);
+        var_dump($res);
+        $res = $student->sum(['is_delete' => ['=', 0]], ['english', 'math', 'history'], ['class_id', 'sex'], ['class_id' => 'asc', 'sex' => 'desc']);
+        var_dump($res);
+        $res = $student->avg(['is_delete' => ['=', 0]], ['english', 'history'], ['class_id', 'sex'], ['class_id' => 'asc', 'sex' => 'desc']);
+        // var_dump($res);
+        $res = $student->min(['is_delete' => ['=', 0]], ['english', 'biology'], ['class_id', 'sex'], ['class_id' => 'asc', 'sex' => 'desc']);
+        foreach ($res as $re) {
+            var_dump($re);
+        }
+        // var_dump($res);
+        $res = $student->max(['is_delete' => ['=', 0]], ['english', 'math'], ['class_id', 'sex'], ['class_id' => 'asc', 'sex' => 'desc']);
+        // var_dump($res);
+
+        $this->assertNotEmpty('sdfgd');
     }
 
     public function testGetAllFullSql()
@@ -375,26 +448,27 @@ class mainTest extends \PHPUnit\Framework\TestCase
         $this->assertNotEmpty('sdfgd');
     }
 
+
     protected function createArticleRow()
     {
         return [
-            'user_id'     => time() + mt_rand(100, 999),
-            'title'       => mt_rand(1000, 9999) . 'title',
-            'content'     => str_repeat(mt_rand(1000, 9999) . 'content', mt_rand(3, 5)),
-            'tag'         => 'tag',
+            'user_id' => time() + mt_rand(100, 999),
+            'title' => mt_rand(1000, 9999) . 'title',
+            'content' => str_repeat(mt_rand(1000, 9999) . 'content', mt_rand(3, 5)),
+            'tag' => 'tag',
             'create_time' => time()
         ];
     }
 
     protected function transactionTest(\BaAGee\MySQL\DB $db)
     {
-        $sql      = 'INSERT INTO article(id,user_id,title,content,tag,create_time) values 
+        $sql = 'INSERT INTO article(id,user_id,title,content,tag,create_time) values 
 (null ,:user_id,:title,:content,:tag,:create_time)';
         $userData = $this->createArticleRow();
         $db->execute($sql, $userData);
         $this->printSqlInfo(DB::getLastSql());
 
-        $sql        = 'update student_score set english=? where id = ?';
+        $sql = 'update student_score set english=? where id = ?';
         $updateData = [mt_rand(30, 100), 313];
 
         // throw new Exception('发生失误');
@@ -407,22 +481,22 @@ class mainTest extends \PHPUnit\Framework\TestCase
     {
         return [
             'student_name' => $this->createStudentName(),
-            'student_id'   => intval(microtime(true) * 1000) + mt_rand(1000000, 9999999),
-            'chinese'      => mt_rand(40, 100),
-            'english'      => mt_rand(45, 100),
-            'math'         => new Expression(mt_rand(30, 100)),
-            'biology'      => mt_rand(47, 98),
-            'history'      => mt_rand(53, 100),
-            'class_id'     => mt_rand(1, 10),
-            'age'          => mt_rand(17, 19),
-            'sex'          => mt_rand(1, 2),
-            'create_time'  => time()
+            'student_id' => intval(microtime(true) * 1000) + mt_rand(1000000, 9999999),
+            'chinese' => mt_rand(40, 100),
+            'english' => mt_rand(45, 100),
+            'math' => new Expression(mt_rand(30, 100)),
+            'biology' => mt_rand(47, 98),
+            'history' => mt_rand(53, 100),
+            'class_id' => mt_rand(1, 10),
+            'age' => mt_rand(17, 19),
+            'sex' => mt_rand(1, 2),
+            'create_time' => time()
         ];
     }
 
     protected function createStudentName()
     {
-        $b   = '';
+        $b = '';
         $num = mt_rand(2, 3);
         for ($i = 0; $i < $num; $i++) {
             $a = chr(mt_rand(0xB0, 0xD0)) . chr(mt_rand(0xA1, 0xF0));
