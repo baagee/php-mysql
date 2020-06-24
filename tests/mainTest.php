@@ -36,6 +36,19 @@ class mainTest extends \PHPUnit\Framework\TestCase
         $this->config = include __DIR__ . '/config.php';
         \BaAGee\MySQL\DBConfig::init($this->config);
         \BaAGee\MySQL\DBConfig::addConfig($this->config, 'mysql1');
+        // 先初始化sqlRecoder
+        \BaAGee\MySQL\SqlRecorder::setSaveHandler(function ($params) {
+            // var_dump($params);
+            $time = ($params['sqlInfo']['endTime'] - $params['sqlInfo']['startTime']) * 1000;
+            $cTime = ($params['sqlInfo']['connectedTime'] - $params['sqlInfo']['startTime']) * 1000;
+            $log = sprintf("APP_NAME[%s] success[%s] cost[%s]ms connectTime[%s]ms [SQL] %s" . PHP_EOL, $params['appName'], $params['sqlInfo']['success'] ? 'ok' : 'no',
+                $time, $cTime, $params['sqlInfo']['fullSql']);
+            echo $log;
+            // die;
+        }, [
+            'appName' => 'test'
+        ]);
+
         $this->simpleTable = SimpleTable::getInstance('student_score');
         $this->db = \BaAGee\MySQL\DB::getInstance();
     }
