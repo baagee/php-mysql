@@ -252,7 +252,7 @@ $student = \BaAGee\MySQL\FasterTable::getInstance('student_score');
 $student->insert(createStudentScoreRow(), false);
 $r = createStudentScoreRow();
 $r['id'] = mt_rand(3000, 3100);
-// 组建冲突支持自动更新
+// 主键/唯一索引冲突支持自动更新
 $student->insert($r, true, [
     'english' => new \BaAGee\MySQL\Expression('Values(english)'),
     'math' => new \BaAGee\MySQL\Expression('Values(math)'),

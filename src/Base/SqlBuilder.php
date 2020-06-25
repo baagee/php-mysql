@@ -388,6 +388,22 @@ abstract class SqlBuilder
     }
 
     /**
+     * 获取随机ID
+     * @param int $len 长度
+     * @return string
+     */
+    private static function uniqId($len)
+    {
+        $string = 'qazwsxedcrfvtgbyhnujmikolp0129384756';
+        $count = strlen($string) - 1;
+        $return = '';
+        for ($i = 0; $i < $len; $i++) {
+            $return .= $string[mt_rand(0, $count)];
+        }
+        return $return;
+    }
+
+    /**
      * @param string $field
      * @param        $condition
      * @param string $op
@@ -397,25 +413,16 @@ abstract class SqlBuilder
      */
     private function createSingleCondition(string $field, $condition, string $op = 'AND', bool $having = false)
     {
-        $uniqId          = function ($len) {
-            $string = 'qazwsxedcrfvtgbyhnujmikolp0129384756';
-            $count  = strlen($string) - 1;
-            $return = '';
-            for ($i = 0; $i < $len; $i++) {
-                $return .= $string[mt_rand(0, $count)];
-            }
-            return $return;
-        };
         $conditionString = '';
         $k               = trim($field, '`');
-        if ($having == true || ($having == false && isset($this->_tableSchema['columns'][$field]))) {
+        if ($having == true || ($having == false && isset($this->_tableSchema['columns'][$k]))) {
             if ($condition instanceof Expression) {
                 $conditionString .= sprintf(' `%s` %s %s', $k, $condition, $op);
             } elseif (is_array($condition)) {
                 if ($having) {
-                    $z_k = '_h_' . $k . '_' . $uniqId(7);
+                    $z_k = '_h_' . $k . '_' . self::uniqId(7);
                 } else {
-                    $z_k = '_w_' . $k . '_' . $uniqId(7);
+                    $z_k = '_w_' . $k . '_' . self::uniqId(7);
                 }
                 $w  = strtoupper(trim($condition[0]));
                 $vv = $condition[1];
