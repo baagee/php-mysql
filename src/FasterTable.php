@@ -40,12 +40,12 @@ class FasterTable
             throw new \Exception('表名不能为空');
         }
 
-        if (empty(self::$_instance[$tableName])) {
-            $self = new static();
-            $self->simpleTable = SimpleTable::getInstance($tableName);
-            self::$_instance[$tableName] = $self;
+        if (empty(static::$_instance[$tableName])) {
+            $static = new static();
+            $static->simpleTable = SimpleTable::getInstance($tableName);
+            static::$_instance[$tableName] = $static;
         }
-        return self::$_instance[$tableName];
+        return static::$_instance[$tableName];
     }
 
     /**

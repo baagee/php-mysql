@@ -120,15 +120,16 @@ final class DataRelation
         foreach ($this->relations as $itemRelation) {
             $list = $this->getDataFromDB($itemRelation);
             $prefix = str_replace('has', '', $itemRelation['method']);
+            $hasCallback = isset($itemRelation['callback']) && ($itemRelation['callback'] instanceof \Closure);
             if ($itemRelation['method'] == 'hasone') {
-                if (isset($itemRelation['callback']) && $itemRelation['callback'] instanceof \Closure) {
+                if ($hasCallback) {
                     array_walk($list, $itemRelation['callback']);
                 }
                 $list = array_column($list, null, $itemRelation['right_column']);
             } elseif ($itemRelation['method'] == 'hasmany') {
                 $newList = [];
                 foreach ($list as $k => $item) {
-                    if (isset($itemRelation['callback']) && $itemRelation['callback'] instanceof \Closure) {
+                    if ($hasCallback) {
                         $itemRelation['callback']($item, $k);
                     }
                     $newList[$item[$itemRelation['right_column']]][] = $item;
