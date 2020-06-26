@@ -33,7 +33,7 @@ final class DataRelation
 
     /**
      * DataRelation constructor.
-     * @param $data
+     * @param array $data 可以是单行记录的关联数组也可以是多行记录的索引数组
      */
     public function __construct(array $data = [])
     {
@@ -54,13 +54,13 @@ final class DataRelation
         if (in_array($method, ['hasone', 'hasmany'])) {
             list($table, $column) = explode('.', $arguments[1]);
             $this->relations[] = [
-                'left_column'    => $arguments[0],
-                'right_column'   => $column,
+                'left_column' => $arguments[0],
+                'right_column' => $column,
                 'relation_table' => $table,
-                'fields'         => $arguments[2] ?? ['*'],
-                'conditions'     => $arguments[3] ?? [],
-                'callback'       => $arguments[4] ?? null,
-                'method'         => $method,
+                'fields' => $arguments[2] ?? ['*'],
+                'conditions' => $arguments[3] ?? [],
+                'callback' => $arguments[4] ?? null,
+                'method' => $method,
             ];
         }
         return $this;
@@ -102,8 +102,8 @@ final class DataRelation
             $conditions = array_merge([
                 $relationConfig['right_column'] => ['in', $columnValues]
             ], (array)($relationConfig['conditions'] ?? []));
-            $tableObj   = SimpleTable::getInstance($relationConfig['relation_table']);
-            $list       = $tableObj->fields(self::getFields($relationConfig))->where($conditions)->select(false);
+            $tableObj = SimpleTable::getInstance($relationConfig['relation_table']);
+            $list = $tableObj->fields(self::getFields($relationConfig))->where($conditions)->select(false);
         }
         if (empty($list))
             $list = [];
@@ -118,7 +118,7 @@ final class DataRelation
     {
         //循环获取每个关系的数据
         foreach ($this->relations as $itemRelation) {
-            $list   = $this->getDataFromDB($itemRelation);
+            $list = $this->getDataFromDB($itemRelation);
             $prefix = str_replace('has', '', $itemRelation['method']);
             if ($itemRelation['method'] == 'hasone') {
                 if (isset($itemRelation['callback']) && $itemRelation['callback'] instanceof \Closure) {
@@ -170,18 +170,35 @@ final class DataRelation
     }
 
     /**
+     * 是否是关联数组
+     * @param $array
+     * @return bool
+     */
+    protected function isAssoc($array)
+    {
+        if (is_array($array)) {
+            $keys = array_keys($array);
+            return $keys != array_keys($keys);
+        }
+        return false;
+    }
+
+    /**
      * 一维数组转二维数组
      * @param $data
      * @return array
      */
     protected function prepareData($data): array
     {
-        if (count($data) === count($data, COUNT_RECURSIVE)) {
-            $data       = [$data];
+        if ($this->isAssoc($data)) {
+            //关联数组
+            $data = [$data];
             $this->flag = true;
         } else {
+            //索引数组
             $this->flag = false;
         }
+
         return $data;
     }
 }

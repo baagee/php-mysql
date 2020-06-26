@@ -41,7 +41,7 @@ $studentScoreList2 = $studentScoreObj->limit(3)->hasOne('class_id', 'class_group
 foreach ($studentScoreList2 as $item) {
     var_dump($item);
 }
-//
+
 \BaAGee\MySQL\DBConfig::switchTo('test2');
 
 $studentScoreList3 = $studentScoreObj->limit(3)->hasOne('class_id', 'class_group.id', ['name', 'create_time'], [], function (&$v) {
