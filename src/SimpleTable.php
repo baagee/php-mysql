@@ -212,7 +212,8 @@ final class SimpleTable extends SqlBuilder implements SimpleTableInterface
     }
 
     /**
-     * 查询
+     * 查询数据
+     * yield查询如果之前有设置hasOne,hasMany每次迭代都会查一次数据库所以虽然能降低内存但是请求数据库次数多，总体耗时长，也不建议使用
      * @param bool $generator
      * @return array|\Generator
      * @throws \Exception
@@ -221,7 +222,18 @@ final class SimpleTable extends SqlBuilder implements SimpleTableInterface
     {
         list($sql, $prepareData) = $this->_buildSelect();
         if ($generator) {
-            $res = $this->_dbInstance->yieldQuery($sql, $prepareData);
+            if (!empty($this->_relations)) {
+                $relations = $this->_relations;
+                $callback = function ($row) use ($relations) {
+                    $dataRelation = new DataRelation();
+                    $dataRelation->setData($row)->setRelations($relations);
+                    $row = $dataRelation->getData();
+                    return $row;
+                };
+            } else {
+                $callback = null;
+            }
+            $res = $this->_dbInstance->yieldQuery($sql, $prepareData, $callback);
         } else {
             $res = $this->_dbInstance->query($sql, $prepareData);
         }
@@ -230,8 +242,8 @@ final class SimpleTable extends SqlBuilder implements SimpleTableInterface
             $dataRelation = new DataRelation();
             $dataRelation->setData($res)->setRelations($this->_relations);
             $res = $dataRelation->getData();
-            $this->_relations = [];
         }
+        $this->_relations = [];
         return $res;
     }
 

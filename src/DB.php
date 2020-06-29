@@ -41,15 +41,19 @@ final class DB extends DBAbstract implements DBInterface
 
     /**
      * 返回查询数据的生成器
-     * @param string $sql  要查询的sql
-     * @param array  $data 参数绑定
+     * @param string   $sql      要查询的sql
+     * @param array    $data     参数绑定
+     * @param callable $callback 回调函数
      * @return \Generator
      * @throws \Exception
      */
-    final public function yieldQuery($sql, array $data = [])
+    final public function yieldQuery($sql, array $data = [], callable $callback = null)
     {
         $stmt = $this->runSql(!$this->inTransaction, $sql, $data);
         while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
+            if (!is_null($callback) && is_callable($callback)) {
+                $row = call_user_func($callback, $row);
+            }
             yield $row;
         }
     }

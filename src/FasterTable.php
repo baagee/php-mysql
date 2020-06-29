@@ -18,6 +18,8 @@ use BaAGee\MySQL\Base\SingletonTrait;
  * @method avg(array $conditions, array $columns, array $groupBy = [], array $orderBy = [], bool $yield = false)
  * @method count(array $conditions, array $columns, array $groupBy = [], array $orderBy = [], bool $yield = false)
  * @method complex(array $conditions, array $type2columns, array $groupBy = [], array $orderBy = [], bool $yield = false)
+ * @method $this hasOne(string $leftColumn, string $rightTableColumn, array $fields = ['*'], array $conditions = [], $callback = null);
+ * @method $this hasMany(string $leftColumn, string $rightTableColumn, array $fields = ['*'], array $conditions = [], $callback = null);
  * @package BaAGee\MySQL
  */
 class FasterTable
@@ -27,6 +29,21 @@ class FasterTable
      */
     protected $simpleTable = null;
     use SingletonTrait;
+
+    /**
+     * @var array 保存表关系
+     */
+    protected $_relations = [];
+
+    /**
+     * 清空数据表关系
+     * @return $this
+     */
+    public function clearRelations()
+    {
+        $this->_relations = [];
+        return $this;
+    }
 
     /**
      * 获取实例
@@ -60,34 +77,20 @@ class FasterTable
      */
     public function yieldRows(array $conditions, array $columns = ['*'], array $orderBy = [], int $offset = 0, $limit = null)
     {
-        $offset = intval($offset);
-        $limit = intval($limit);
-        if ($offset < 0 || $limit < 0) {
-            throw new \Exception('offset或者limit不允许小于0');
-        }
-
-        $this->simpleTable->fields($columns)->where($conditions);
-        if (!empty($orderBy)) {
-            $this->simpleTable->orderBy($orderBy);
-        }
-        if ($limit != 0) {
-            // limit>0才会使用offset+limit
-            $this->simpleTable->limit($offset, $limit);
-        }
-        return $this->simpleTable->select(true);
+        return $this->_findRows($conditions, $columns, $orderBy, $offset, $limit, true);
     }
 
     /**
-     * 查找多行数据
-     * @param array $columns    查找的字段
-     * @param array $conditions 查找条件
-     * @param array $orderBy    排序
-     * @param int   $offset     offset
-     * @param null  $limit      limit
-     * @return array
+     * @param array          $conditions
+     * @param array|string[] $columns
+     * @param array          $orderBy
+     * @param int            $offset
+     * @param null           $limit
+     * @param bool           $yield
+     * @return array|\Generator
      * @throws \Exception
      */
-    public function findRows(array $conditions, array $columns = ['*'], array $orderBy = [], int $offset = 0, $limit = null)
+    protected function _findRows(array $conditions, array $columns = ['*'], array $orderBy = [], int $offset = 0, $limit = null, bool $yield = false)
     {
         $offset = intval($offset);
         $limit = intval($limit);
@@ -103,7 +106,31 @@ class FasterTable
             // limit>0才会使用offset+limit
             $this->simpleTable->limit($offset, $limit);
         }
-        return $this->simpleTable->select();
+        if (!empty($this->_relations)) {
+            foreach ($this->_relations as $relation) {
+                $method = $relation['method'];
+                if (in_array('*', $columns) || in_array($relation['left_column'], $columns)) {
+                    $this->simpleTable->$method($relation['left_column'], $relation['right_column'],
+                        $relation['fields'], $relation['conditions'], $relation['callback']);
+                }
+            }
+        }
+        return $this->simpleTable->select($yield);
+    }
+
+    /**
+     * 查找多行数据
+     * @param array $columns    查找的字段
+     * @param array $conditions 查找条件
+     * @param array $orderBy    排序
+     * @param int   $offset     offset
+     * @param null  $limit      limit
+     * @return array
+     * @throws \Exception
+     */
+    public function findRows(array $conditions, array $columns = ['*'], array $orderBy = [], int $offset = 0, $limit = null)
+    {
+        return $this->_findRows($conditions, $columns, $orderBy, $offset, $limit, false);
     }
 
     /**
@@ -214,7 +241,10 @@ class FasterTable
      */
     public function findColumn(string $column, array $conditions, array $orderBy = [], int $offset = 0, int $limit = null)
     {
+        $relations = $this->_relations;
+        $this->_relations = [];
         $res = $this->findRows($conditions, [$column], $orderBy, $offset, $limit);
+        $this->_relations = $relations;
         return array_column($res, $column);
     }
 
@@ -231,10 +261,13 @@ class FasterTable
      */
     public function yieldColumn(string $column, array $conditions, array $orderBy = [], int $offset = 0, int $limit = null)
     {
+        $relations = $this->_relations;
+        $this->_relations = [];
         $res = $this->yieldRows($conditions, [$column], $orderBy, $offset, $limit);
         foreach ($res as $re) {
             yield $re[$column] ?? null;
         }
+        $this->_relations = $relations;
     }
 
     /**
@@ -360,6 +393,30 @@ class FasterTable
     }
 
     /**
+     * @param $method
+     * @param $arguments
+     * @return $this
+     * @throws \Exception
+     */
+    protected function relations($method, $arguments): self
+    {
+        if (empty($method)) {
+            throw new \Exception('method不能为空');
+        }
+        if (in_array($method, ['hasone', 'hasmany'])) {
+            $this->_relations[] = [
+                'left_column' => $arguments[0],
+                'right_column' => $arguments[1],
+                'fields' => $arguments[2] ?? ['*'],
+                'conditions' => $arguments[3] ?? [],
+                'callback' => $arguments[4] ?? null,
+                'method' => $method,
+            ];
+        }
+        return $this;
+    }
+
+    /**
      * @param string $name
      * @param array  $arguments
      * @return array|\Generator
@@ -373,6 +430,8 @@ class FasterTable
         } elseif ($name == 'complex') {
             //多种统计分析
             return $this->multiTypeCount($name, $arguments);
+        } elseif (in_array($name, ['hasone', 'hasmany'])) {
+            return $this->relations($name, $arguments);
         }
     }
 }
