@@ -46,6 +46,15 @@ class FasterTable
     }
 
     /**
+     * 获取的simpleTable对象
+     * @return SimpleTable
+     */
+    public function getSimpleTable()
+    {
+        return $this->simpleTable;
+    }
+
+    /**
      * 获取实例
      * @param string $tableName
      * @return static|null

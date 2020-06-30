@@ -121,6 +121,9 @@ $res = $student->complex(['is_delete' => ['=', 0]], [
 ], ['class_id', 'sex'], ['class_id' => 'asc', 'sex' => 'desc']);
 var_dump($res);
 
+$res = $student->getSimpleTable()->fields(['*'])->having(['age' => ['=', 18]])->where(['sex' => ['=', 2]])->limit(0, 3)->select();
+var_dump($res);
+
 function createStudentScoreRow()
 {
     return [
