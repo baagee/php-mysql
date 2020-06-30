@@ -36,6 +36,7 @@ $filmActorTable = \BaAGee\MySQL\FasterTable::getInstance('film_actor');
 //
 \BaAGee\MySQL\DataRelation::setCacheSize(100);
 $filmActorTable->hasOne('actor_id', 'actor.id', ['name'])->hasOne('film_id', 'film.id', ['name']);
+$filmActorTable = \BaAGee\MySQL\FasterTable::getInstance('film_actor');
 
 $filmActorGenera = $filmActorTable->yieldColumn('film_id', []);
 foreach ($filmActorGenera as $genus) {
