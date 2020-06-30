@@ -397,11 +397,9 @@ class mainTest extends \PHPUnit\Framework\TestCase
         $this->assertNotEmpty($studentScoreList);
     }
 
-    public function testRelation3(){
-        // $filmTable = SimpleTable::getInstance('film');
-        // $actorTable = SimpleTable::getInstance('actor');
+    public function testRelation3()
+    {
         $filmActorTable = SimpleTable::getInstance('film_actor');
-
         $filmActorGenera = $filmActorTable->hasOne('film_id', 'film.id', ['name'])
             ->hasOne('actor_id', 'actor.id', ['name'])->select(false);
         foreach ($filmActorGenera as $fa) {
@@ -414,16 +412,16 @@ class mainTest extends \PHPUnit\Framework\TestCase
             var_dump($genus);
         }
 
-        // $filmTable = \BaAGee\MySQL\FasterTable::getInstance('film');
-        // $actorTable = \BaAGee\MySQL\FasterTable::getInstance('actor');
         $filmActorTable = \BaAGee\MySQL\FasterTable::getInstance('film_actor');
         //
+        \BaAGee\MySQL\DataRelation::setCacheSize(100);
         $filmActorTable->hasOne('actor_id', 'actor.id', ['name'])->hasOne('film_id', 'film.id', ['name']);
 
         $filmActorGenera = $filmActorTable->yieldColumn('film_id', []);
         foreach ($filmActorGenera as $genus) {
             var_dump($genus);
         }
+        \BaAGee\MySQL\DataRelation::clearCache();
 
         var_dump($filmActorTable->findColumn('film_id', []));
         $filmActorGenera = $filmActorTable->yieldRows([], ['*']);
@@ -440,10 +438,6 @@ class mainTest extends \PHPUnit\Framework\TestCase
 
         $filmActorGenera = $filmActorTable->findRow([], ['film_id']);
         var_dump($filmActorGenera);
-
-        // foreach (\BaAGee\MySQL\SqlRecorder::getAllFullSql() as $value) {
-        //     var_dump($value['fullSql']);
-        // }
         $this->assertNotEmpty(42356);
     }
 

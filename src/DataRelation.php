@@ -32,6 +32,16 @@ final class DataRelation
     protected $flag = false;
 
     /**
+     * @var array 缓存的数据
+     */
+    protected static $cacheData = [];
+
+    /**
+     * @var int 缓存池大小
+     */
+    protected static $cacheSize = 10000;
+
+    /**
      * DataRelation constructor.
      * @param array $data 可以是单行记录的关联数组也可以是多行记录的索引数组
      */
@@ -95,19 +105,49 @@ final class DataRelation
      * @return array
      * @throws \Exception
      */
-    protected function getDataFromDB($relationConfig): array
+    protected function getDataFromRelation($relationConfig): array
     {
         $columnValues = array_unique(array_filter(array_column($this->data, $relationConfig['left_column'])));
         if (!empty($columnValues)) {
             $conditions = array_merge([
                 $relationConfig['right_column'] => ['in', $columnValues]
             ], (array)($relationConfig['conditions'] ?? []));
-            $tableObj = SimpleTable::getInstance($relationConfig['relation_table']);
-            $list = $tableObj->fields(self::getFields($relationConfig))->where($conditions)->select(false);
+            $fields = self::getFields($relationConfig);
+            sort($fields);
+            $key = md5(sprintf('%s:%s:%s', $relationConfig['relation_table'], serialize($fields), serialize($conditions)));
+            if (isset(self::$cacheData[$key])) {
+                $list = self::$cacheData[$key];
+            } else {
+                $tableObj = SimpleTable::getInstance($relationConfig['relation_table']);
+                $list = $tableObj->fields($fields)->where($conditions)->select(false);
+                self::$cacheData[$key] = $list;
+                if (count(self::$cacheData, COUNT_RECURSIVE) > self::$cacheSize) {
+                    array_shift(self::$cacheData);
+                }
+            }
         }
         if (empty($list))
             $list = [];
         return $list;
+    }
+
+    /**
+     * 设置缓存池大小
+     * @param int $size default 10000
+     */
+    public static function setCacheSize(int $size)
+    {
+        if ($size > 0) {
+            self::$cacheSize = $size;
+        }
+    }
+
+    /**
+     * 清空缓存的数据
+     */
+    public static function clearCache()
+    {
+        self::$cacheData = [];
     }
 
     /**
@@ -118,7 +158,7 @@ final class DataRelation
     {
         //循环获取每个关系的数据
         foreach ($this->relations as $itemRelation) {
-            $list = $this->getDataFromDB($itemRelation);
+            $list = $this->getDataFromRelation($itemRelation);
             $prefix = str_replace('has', '', $itemRelation['method']);
             $hasCallback = isset($itemRelation['callback']) && ($itemRelation['callback'] instanceof \Closure);
             if ($itemRelation['method'] == 'hasone') {
