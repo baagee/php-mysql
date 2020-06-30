@@ -100,6 +100,8 @@ $res     = $article->insert(createArticleRow());
 var_dump(\BaAGee\MySQL\SqlRecorder::getLastSql());
 var_dump($res);
 
+$db = $article->getDb();
+var_dump($db->getLastInsertId());
 
 function createArticleRow()
 {

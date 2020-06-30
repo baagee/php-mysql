@@ -32,6 +32,14 @@ final class SimpleTable extends SqlBuilder implements SimpleTableInterface
     protected $_relations = [];
 
     /**
+     * @return DB
+     */
+    public function getDb()
+    {
+        return $this->_dbInstance;
+    }
+
+    /**
      * 获取表结构
      * @param $tableName
      * @return array
