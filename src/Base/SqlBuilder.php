@@ -86,25 +86,25 @@ abstract class SqlBuilder
     protected function _clear()
     {
         $this->__havingConditions = '';
-        $this->__forceIndex       = '';
-        $this->__orderBy          = '';
-        $this->__whereConditions  = '';
-        $this->__limit            = '';
-        $this->__groupBy          = '';
-        $this->__fields           = '';
-        $this->__lastPrepareSql   = '';
-        $this->__lastPrepareData  = [];
-        $this->__lock             = '';
+        $this->__forceIndex = '';
+        $this->__orderBy = '';
+        $this->__whereConditions = '';
+        $this->__limit = '';
+        $this->__groupBy = '';
+        $this->__fields = '';
+        $this->__lastPrepareSql = '';
+        $this->__lastPrepareData = [];
+        $this->__lock = '';
     }
 
     /**
      * 设置查询条件，可以多次调用 and连接
      * @param array $conditions  条件数组
      *                           [
-     *                           'field1'=>['>|<|!=|=',value],
-     *                           'field2'=>['like','%like'],
+     *                           'field1'=>['>|>=|<=|<|!=|=',value],
+     *                           'field2'=>['[not]like','%like'],
      *                           'field3'=>['[not]in',[1,2,3,4,5]]
-     *                           'field4'=>['between',[start,end]]
+     *                           'field4'=>['[not]between',[start,end]]
      *                           ]
      * @return static
      * @throws \Exception
@@ -200,7 +200,7 @@ abstract class SqlBuilder
             }
             // if (in_array($field, array_keys($this->_tableSchema['columns']))) {
             if (isset($this->_tableSchema['columns'][$field])) {
-                $field          = trim($field, '`');
+                $field = trim($field, '`');
                 $this->__fields .= ', `' . trim($field, '`') . '`';
             } else {
                 $this->__fields .= ', ' . $field;
@@ -280,11 +280,11 @@ abstract class SqlBuilder
      */
     final protected function _buildInsertOrReplace(array $data, bool $replace = false, bool $ignore = false, array $onDuplicateUpdate = [])
     {
-        $this->__lastPrepareSql  = ($replace ? 'REPLACE' : 'INSERT') .
+        $this->__lastPrepareSql = ($replace ? 'REPLACE' : 'INSERT') .
             ((!$replace && $ignore && empty($onDuplicateUpdate)) ? ' IGNORE' : '') .//insert才有可能有IGNORE
             ' INTO `' . $this->_tableName . '` (';
-        $fields                  = [];
-        $zz                      = '';
+        $fields = [];
+        $zz = '';
         $this->__lastPrepareData = [];
         foreach ($data as $i => $item_array) {
             $z = '(';
@@ -297,14 +297,14 @@ abstract class SqlBuilder
                     if ($v instanceof Expression) {
                         $z .= sprintf('%s, ', $v);
                     } else {
-                        $z                                            .= ':' . $k . '_' . $i . ', ';
+                        $z .= ':' . $k . '_' . $i . ', ';
                         $this->__lastPrepareData[':' . $k . '_' . $i] = $v;
                     }
                 }
             }
             $zz .= rtrim($z, ', ') . '),';
         }
-        $fields                 = sprintf('`%s`', implode('`, `', $fields));
+        $fields = sprintf('`%s`', implode('`, `', $fields));
         $this->__lastPrepareSql .= $fields;
         $this->__lastPrepareSql = rtrim($this->__lastPrepareSql, ', ') . ') VALUES ' . rtrim($zz, ',');
 
@@ -323,7 +323,7 @@ abstract class SqlBuilder
                 }
             }
 
-            $sub                    = rtrim($sub, ', ');
+            $sub = rtrim($sub, ', ');
             $this->__lastPrepareSql .= ' ON DUPLICATE KEY UPDATE ' . $sub;
         }
 
@@ -357,7 +357,7 @@ abstract class SqlBuilder
                 if ($value instanceof Expression) {
                     $this->__lastPrepareSql .= sprintf('`' . $field . '` = %s, ', $value);
                 } else {
-                    $this->__lastPrepareSql                .= '`' . $field . '` = :' . $field . ', ';
+                    $this->__lastPrepareSql .= '`' . $field . '` = :' . $field . ', ';
                     $this->__lastPrepareData[':' . $field] = $value;
                 }
             }
@@ -414,7 +414,7 @@ abstract class SqlBuilder
     private function createSingleCondition(string $field, $condition, string $op = 'AND', bool $having = false)
     {
         $conditionString = '';
-        $k               = trim($field, '`');
+        $k = trim($field, '`');
         if ($having == true || ($having == false && isset($this->_tableSchema['columns'][$k]))) {
             if ($condition instanceof Expression) {
                 $conditionString .= sprintf(' `%s` %s %s', $k, $condition, $op);
@@ -424,11 +424,11 @@ abstract class SqlBuilder
                 } else {
                     $z_k = '_w_' . $k . '_' . self::uniqId(7);
                 }
-                $w  = strtoupper(trim($condition[0]));
+                $w = strtoupper(trim($condition[0]));
                 $vv = $condition[1];
                 if (strpos($w, 'BETWEEN') !== false) {
                     // between
-                    $conditionString .= ' `' . $k . '` BETWEEN :' . $z_k . '_min AND :' . $z_k . '_max ' . $op;
+                    $conditionString .= ' `' . $k . '` ' . $w . ' :' . $z_k . '_min AND :' . $z_k . '_max ' . $op;
                     // $conditionString .= ' (`' . $k . '` BETWEEN :' . $z_k . '_min AND :' . $z_k . '_max) ' . $op;
                     if (($this->_tableSchema['columns'][$k] ?? '') === self::COLUMN_TYPE_INT) {
                         $vv[0] = intval($vv[0]);
@@ -445,7 +445,7 @@ abstract class SqlBuilder
                 } else if (strpos($w, 'IN') !== false) {
                     // in 不能用参数绑定，预处理
                     $ppp = '';
-                    $vv  = array_unique($vv);
+                    $vv = array_unique($vv);
                     foreach ($vv as $var) {
                         if (($this->_tableSchema['columns'][$k] ?? '') === self::COLUMN_TYPE_INT) {
                             $ppp .= intval($var) . ',';
@@ -453,7 +453,7 @@ abstract class SqlBuilder
                             $ppp .= '\'' . strval($var) . '\',';
                         }
                     }
-                    $conditionString .= ' `' . $k . '` in (' . rtrim($ppp, ',') . ') ' . $op;
+                    $conditionString .= ' `' . $k . '` ' . $w . ' (' . rtrim($ppp, ',') . ') ' . $op;
                     // $conditionString .= ' (`' . $k . '` in (' . rtrim($ppp, ',') . ')) ' . $op;
                 } else {
                     // > < != = like %112233% intval => 0
@@ -483,7 +483,7 @@ abstract class SqlBuilder
      */
     private function buildConditions(array $conditions, $having = false)
     {
-        $keys   = array_keys($conditions);
+        $keys = array_keys($conditions);
         $conStr = '';
         foreach ($keys as $index => $key) {
             if (is_string($conditions[$key]) && in_array(strtolower($conditions[$key]), ['or', 'and'])) {
@@ -501,7 +501,7 @@ abstract class SqlBuilder
             }
 
             if (is_integer($key) && is_array($conditions[$key])) {
-                $str    = trim($this->buildConditions($conditions[$key], $having), 'AND OR');
+                $str = trim($this->buildConditions($conditions[$key], $having), 'AND OR');
                 $conStr .= ' (' . $str . ') ' . $op;
             } elseif (is_integer($key) && $conditions[$key] instanceof Expression) {
                 $conStr .= sprintf(' (%s) %s', $conditions[$key], $op);
@@ -512,6 +512,555 @@ abstract class SqlBuilder
         }
 
         return trim($conStr, 'AND OR');
+    }
+
+    /**
+     * where in查询
+     * @param string $field  字段
+     * @param array  $values 值数组
+     * @param bool   $and    是否and
+     * @return $this
+     * @throws \Exception
+     */
+    public function whereIn(string $field, array $values, bool $and = true)
+    {
+        if (empty($field)) {
+            throw new \Exception('field不能为空');
+        }
+        if (empty($values) || !is_array($values)) {
+            throw new \Exception('values不合法');
+        }
+        $condition = [$field => ['in', $values]];
+        if ($and) {
+            return $this->where($condition);
+        } else {
+            return $this->orWhere($condition);
+        }
+    }
+
+    /**
+     * where not in查询
+     * @param string $field  字段
+     * @param array  $values 值数组
+     * @param bool   $and    是否and
+     * @return $this
+     * @throws \Exception
+     */
+    public function whereNotIn(string $field, array $values, bool $and = true)
+    {
+        if (empty($field)) {
+            throw new \Exception('field不能为空');
+        }
+        if (empty($values) || !is_array($values)) {
+            throw new \Exception('values不合法');
+        }
+        $condition = [$field => ['not in', $values]];
+        if ($and) {
+            return $this->where($condition);
+        } else {
+            return $this->orWhere($condition);
+        }
+    }
+
+    /**
+     * where between查询
+     * @param string           $field 字段
+     * @param string|float|int $start 开始
+     * @param string|float|int $end   结束
+     * @param bool             $and   是否and
+     * @return $this
+     * @throws \Exception
+     */
+    public function whereBetween(string $field, $start, $end, bool $and = true)
+    {
+        if (empty($field)) {
+            throw new \Exception('field不能为空');
+        }
+        $condition = [$field => ['between', [$start, $end]]];
+        if ($and) {
+            return $this->where($condition);
+        } else {
+            return $this->orWhere($condition);
+        }
+    }
+
+    /**
+     * where not between查询
+     * @param string           $field 字段
+     * @param string|float|int $start 开始
+     * @param string|float|int $end   结束
+     * @param bool             $and   是否and
+     * @return $this
+     * @throws \Exception
+     */
+    public function whereNotBetween(string $field, $start, $end, bool $and = true)
+    {
+        if (empty($field)) {
+            throw new \Exception('field不能为空');
+        }
+
+        $condition = [$field => ['not between', [$start, $end]]];
+        if ($and) {
+            return $this->where($condition);
+        } else {
+            return $this->orWhere($condition);
+        }
+    }
+
+    /**
+     * where like查询
+     * @param string $field 字段
+     * @param string $like  "abc%" or %"abc" or "%abc%"
+     * @param bool   $and   是否and
+     * @return $this
+     * @throws \Exception
+     */
+    public function whereLike(string $field, string $like, bool $and = true)
+    {
+        if (empty($field)) {
+            throw new \Exception('field不能为空');
+        }
+        if (empty($like)) {
+            throw new \Exception('like不能为空');
+        }
+        $condition = [$field => ['like', $like]];
+        if ($and) {
+            return $this->where($condition);
+        } else {
+            return $this->orWhere($condition);
+        }
+    }
+
+    /**
+     * where not like查询
+     * @param string $field 字段
+     * @param string $like  "abc%" or %"abc" or "%abc%"
+     * @param bool   $and   是否and
+     * @return $this
+     * @throws \Exception
+     */
+    public function whereNotLike(string $field, string $like, bool $and = true)
+    {
+        if (empty($field)) {
+            throw new \Exception('field不能为空');
+        }
+        if (empty($like)) {
+            throw new \Exception('like不能为空');
+        }
+        $condition = [$field => ['not like', $like]];
+        if ($and) {
+            return $this->where($condition);
+        } else {
+            return $this->orWhere($condition);
+        }
+    }
+
+    /**
+     * where = 查询
+     * @param string           $field 字段
+     * @param string|int|float $value 值
+     * @param bool             $and   是否and
+     * @return $this
+     * @throws \Exception
+     */
+    public function whereEqual(string $field, $value, bool $and = true)
+    {
+        if (empty($field)) {
+            throw new \Exception('field不能为空');
+        }
+
+        $condition = [$field => ['=', $value]];
+        if ($and) {
+            return $this->where($condition);
+        } else {
+            return $this->orWhere($condition);
+        }
+    }
+
+    /**
+     * where != 查询
+     * @param string           $field 字段
+     * @param string|int|float $value 值
+     * @param bool             $and   是否and
+     * @return $this
+     * @throws \Exception
+     */
+    public function whereNotEqual(string $field, $value, bool $and = true)
+    {
+        if (empty($field)) {
+            throw new \Exception('field不能为空');
+        }
+
+        $condition = [$field => ['!=', $value]];
+        if ($and) {
+            return $this->where($condition);
+        } else {
+            return $this->orWhere($condition);
+        }
+    }
+
+    /**
+     * where > 查询
+     * @param string           $field 字段
+     * @param string|int|float $value 值
+     * @param bool             $and   是否and
+     * @return $this
+     * @throws \Exception
+     */
+    public function whereGt(string $field, $value, bool $and = true)
+    {
+        if (empty($field)) {
+            throw new \Exception('field不能为空');
+        }
+
+        $condition = [$field => ['>', $value]];
+        if ($and) {
+            return $this->where($condition);
+        } else {
+            return $this->orWhere($condition);
+        }
+    }
+
+    /**
+     * where < 查询
+     * @param string           $field 字段
+     * @param string|int|float $value 值
+     * @param bool             $and   是否and
+     * @return $this
+     * @throws \Exception
+     */
+    public function whereLt(string $field, $value, bool $and = true)
+    {
+        if (empty($field)) {
+            throw new \Exception('field不能为空');
+        }
+
+        $condition = [$field => ['<', $value]];
+        if ($and) {
+            return $this->where($condition);
+        } else {
+            return $this->orWhere($condition);
+        }
+    }
+
+    /**
+     * where >= 查询
+     * @param string           $field 字段
+     * @param string|int|float $value 值
+     * @param bool             $and   是否and
+     * @return $this
+     * @throws \Exception
+     */
+    public function whereGte(string $field, $value, bool $and = true)
+    {
+        if (empty($field)) {
+            throw new \Exception('field不能为空');
+        }
+
+        $condition = [$field => ['>=', $value]];
+        if ($and) {
+            return $this->where($condition);
+        } else {
+            return $this->orWhere($condition);
+        }
+    }
+
+    /**
+     * where <= 查询
+     * @param string           $field 字段
+     * @param string|int|float $value 值
+     * @param bool             $and   是否and
+     * @return $this
+     * @throws \Exception
+     */
+    public function whereLte(string $field, $value, bool $and = true)
+    {
+        if (empty($field)) {
+            throw new \Exception('field不能为空');
+        }
+
+        $condition = [$field => ['<=', $value]];
+        if ($and) {
+            return $this->where($condition);
+        } else {
+            return $this->orWhere($condition);
+        }
+    }
+
+    // HAVING
+
+    /**
+     * having in查询
+     * @param string $field  字段
+     * @param array  $values 值数组
+     * @param bool   $and    是否and
+     * @return $this
+     * @throws \Exception
+     */
+    public function havingIn(string $field, array $values, bool $and = true)
+    {
+        if (empty($field)) {
+            throw new \Exception('field不能为空');
+        }
+        if (empty($values) || !is_array($values)) {
+            throw new \Exception('values不合法');
+        }
+        $condition = [$field => ['in', $values]];
+        if ($and) {
+            return $this->having($condition);
+        } else {
+            return $this->orHaving($condition);
+        }
+    }
+
+    /**
+     * having not in查询
+     * @param string $field  字段
+     * @param array  $values 值数组
+     * @param bool   $and    是否and
+     * @return $this
+     * @throws \Exception
+     */
+    public function havingNotIn(string $field, array $values, bool $and = true)
+    {
+        if (empty($field)) {
+            throw new \Exception('field不能为空');
+        }
+        if (empty($values) || !is_array($values)) {
+            throw new \Exception('values不合法');
+        }
+        $condition = [$field => ['not in', $values]];
+        if ($and) {
+            return $this->having($condition);
+        } else {
+            return $this->orHaving($condition);
+        }
+    }
+
+    /**
+     * having between查询
+     * @param string           $field 字段
+     * @param string|float|int $start 开始
+     * @param string|float|int $end   结束
+     * @param bool             $and   是否and
+     * @return $this
+     * @throws \Exception
+     */
+    public function havingBetween(string $field, $start, $end, bool $and = true)
+    {
+        if (empty($field)) {
+            throw new \Exception('field不能为空');
+        }
+
+        $condition = [$field => ['between', [$start, $end]]];
+        if ($and) {
+            return $this->having($condition);
+        } else {
+            return $this->orHaving($condition);
+        }
+    }
+
+    /**
+     * having not between查询
+     * @param string           $field 字段
+     * @param string|float|int $start 开始
+     * @param string|float|int $end   结束
+     * @param bool             $and   是否and
+     * @return $this
+     * @throws \Exception
+     */
+    public function havingNotBetween(string $field, $start, $end, bool $and = true)
+    {
+        if (empty($field)) {
+            throw new \Exception('field不能为空');
+        }
+
+        $condition = [$field => ['not between', [$start, $end]]];
+        if ($and) {
+            return $this->having($condition);
+        } else {
+            return $this->orHaving($condition);
+        }
+    }
+
+    /**
+     * having like查询
+     * @param string $field 字段
+     * @param string $like  "abc%" or %"abc" or "%abc%"
+     * @param bool   $and   是否and
+     * @return $this
+     * @throws \Exception
+     */
+    public function havingLike(string $field, string $like, bool $and = true)
+    {
+        if (empty($field)) {
+            throw new \Exception('field不能为空');
+        }
+        if (empty($like)) {
+            throw new \Exception('like不能为空');
+        }
+        $condition = [$field => ['like', $like]];
+        if ($and) {
+            return $this->having($condition);
+        } else {
+            return $this->orHaving($condition);
+        }
+    }
+
+    /**
+     * having not like查询
+     * @param string $field 字段
+     * @param string $like  "abc%" or %"abc" or "%abc%"
+     * @param bool   $and   是否and
+     * @return $this
+     * @throws \Exception
+     */
+    public function havingNotLike(string $field, string $like, bool $and = true)
+    {
+        if (empty($field)) {
+            throw new \Exception('field不能为空');
+        }
+        if (empty($like)) {
+            throw new \Exception('like不能为空');
+        }
+        $condition = [$field => ['not like', $like]];
+        if ($and) {
+            return $this->having($condition);
+        } else {
+            return $this->orHaving($condition);
+        }
+    }
+
+    /**
+     * having = 查询
+     * @param string           $field 字段
+     * @param string|int|float $value 值
+     * @param bool             $and   是否and
+     * @return $this
+     * @throws \Exception
+     */
+    public function havingEqual(string $field, $value, bool $and = true)
+    {
+        if (empty($field)) {
+            throw new \Exception('field不能为空');
+        }
+
+        $condition = [$field => ['=', $value]];
+        if ($and) {
+            return $this->having($condition);
+        } else {
+            return $this->orHaving($condition);
+        }
+    }
+
+    /**
+     * having != 查询
+     * @param string           $field 字段
+     * @param string|int|float $value 值
+     * @param bool             $and   是否and
+     * @return $this
+     * @throws \Exception
+     */
+    public function havingNotEqual(string $field, $value, bool $and = true)
+    {
+        if (empty($field)) {
+            throw new \Exception('field不能为空');
+        }
+
+        $condition = [$field => ['!=', $value]];
+        if ($and) {
+            return $this->having($condition);
+        } else {
+            return $this->orHaving($condition);
+        }
+    }
+
+    /**
+     * having > 查询
+     * @param string           $field 字段
+     * @param string|int|float $value 值
+     * @param bool             $and   是否and
+     * @return $this
+     * @throws \Exception
+     */
+    public function havingGt(string $field, $value, bool $and = true)
+    {
+        if (empty($field)) {
+            throw new \Exception('field不能为空');
+        }
+
+        $condition = [$field => ['>', $value]];
+        if ($and) {
+            return $this->having($condition);
+        } else {
+            return $this->orHaving($condition);
+        }
+    }
+
+    /**
+     * having < 查询
+     * @param string           $field 字段
+     * @param string|int|float $value 值
+     * @param bool             $and   是否and
+     * @return $this
+     * @throws \Exception
+     */
+    public function havingLt(string $field, $value, bool $and = true)
+    {
+        if (empty($field)) {
+            throw new \Exception('field不能为空');
+        }
+
+        $condition = [$field => ['<', $value]];
+        if ($and) {
+            return $this->having($condition);
+        } else {
+            return $this->orHaving($condition);
+        }
+    }
+
+    /**
+     * having >= 查询
+     * @param string           $field 字段
+     * @param string|int|float $value 值
+     * @param bool             $and   是否and
+     * @return $this
+     * @throws \Exception
+     */
+    public function havingGte(string $field, $value, bool $and = true)
+    {
+        if (empty($field)) {
+            throw new \Exception('field不能为空');
+        }
+
+        $condition = [$field => ['>=', $value]];
+        if ($and) {
+            return $this->having($condition);
+        } else {
+            return $this->orHaving($condition);
+        }
+    }
+
+    /**
+     * having <= 查询
+     * @param string           $field 字段
+     * @param string|int|float $value 值
+     * @param bool             $and   是否and
+     * @return $this
+     * @throws \Exception
+     */
+    public function havingLte(string $field, $value, bool $and = true)
+    {
+        if (empty($field)) {
+            throw new \Exception('field不能为空');
+        }
+
+        $condition = [$field => ['<=', $value]];
+        if ($and) {
+            return $this->having($condition);
+        } else {
+            return $this->orHaving($condition);
+        }
     }
 
     /**
