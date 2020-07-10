@@ -36,13 +36,17 @@ final class SqlRecorder
 
     /**
      * 设置sql日志保存方式
-     * @param       $callable
-     * @param array $params
+     * @param callable $callable
+     * @param array    $params
+     * @throws \Exception
      */
     public static function setSaveHandler($callable, array $params = [])
     {
         if (self::$isInit === true) {
             return;
+        }
+        if (!is_callable($callable)) {
+            throw new \Exception($callable . '不可调用');
         }
         self::$cacheSize = self::DEFAULT_LOG_CACHE_SIZE;
         self::$saveCallback = compact('callable', 'params');
