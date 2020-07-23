@@ -24,7 +24,7 @@ final class SqlRecorder
     protected static $saveCallback = null;
 
     // 默认缓存大小
-    private const DEFAULT_LOG_CACHE_SIZE = 50;
+    private const DEFAULT_LOG_CACHE_SIZE = 2000;
 
     protected static $cacheSize = self::DEFAULT_LOG_CACHE_SIZE;
 
