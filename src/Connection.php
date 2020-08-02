@@ -74,8 +74,8 @@ final class Connection
     private static function getPdoObject(array $config, $retryTimes = 0)
     {
         // echo '连接数据库：' . self::$configName . PHP_EOL;
-        if (isset($config['connectTimeout'])) {
-            $connect_timeout = intval($config['connectTimeout']) == 0 ? 2 : intval($config['connectTimeout']);
+        if (isset($config['connect_timeout'])) {
+            $connect_timeout = intval($config['connect_timeout']) == 0 ? 2 : intval($config['connect_timeout']);
         } else {
             $connect_timeout = 2;
         }
@@ -90,7 +90,7 @@ final class Connection
         try {
             return new \PDO($dsn, $config['user'], $config['password'], $options);
         } catch (\PDOException $e) {
-            if ($retryTimes < ($config['retryTimes'] ?? 0)) {
+            if ($retryTimes < ($config['retry_times'] ?? 0)) {
                 $retryTimes++;
                 return self::getPdoObject($config, $retryTimes);
             } else {

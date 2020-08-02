@@ -98,7 +98,7 @@ final class DB extends DBAbstract implements DBInterface
                 } else {
                     $rtc = DBConfig::get();
                 }
-                if ($retryTimes < (int)($rtc['retryTimes'] ?? 3)) {
+                if ($retryTimes < (int)($rtc['retry_times'] ?? 3)) {
                     self::closeConnection($isRead);
                     $retryTimes++;
                     return $this->runSql($isRead, $sql, $data, $retryTimes);

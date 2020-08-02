@@ -47,7 +47,7 @@ final class SimpleTable extends SqlBuilder implements SimpleTableInterface
      */
     private static function getTableSchema($tableName)
     {
-        $schemasCachePath = DBConfig::get('schemasCachePath', '');
+        $schemasCachePath = DBConfig::get('schemas_cache_path', '');
         if (!is_null($schemasCachePath) && !empty($schemasCachePath)) {
             // 存在缓存目录 判断缓存在不在
             $schemasCachePath .= DIRECTORY_SEPARATOR . DBConfig::getCurrentName();

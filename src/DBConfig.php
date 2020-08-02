@@ -93,7 +93,7 @@ final class DBConfig
      */
     final public static function createSchemasDir()
     {
-        $schemasCachePath = rtrim(self::get('schemasCachePath', ''), '/');
+        $schemasCachePath = rtrim(self::get('schemas_cache_path', ''), '/');
         if (!is_null($schemasCachePath) && !empty($schemasCachePath)) {
             $schemasCachePath .= '/' . self::$currentName;
             if (!is_dir($schemasCachePath)) {
@@ -137,8 +137,8 @@ final class DBConfig
         if (empty($config['charset'])) {
             $config['charset'] = 'utf8';
         }
-        if (empty($config['connectTimeout'])) {
-            $config['connectTimeout'] = 1;//1秒
+        if (empty($config['connect_timeout'])) {
+            $config['connect_timeout'] = 1;//1秒
         }
         if (empty($config['database'])) {
             throw new \Exception($msg . '配置database不能为空');
