@@ -87,7 +87,7 @@ final class DB extends DBAbstract implements DBInterface
             SqlRecorder::record($sql, $sTime, $cTime, $eTime, true, $data);
             return $stmt;
         } catch (\PDOException $e) {
-            $errMsg = $e->getMessage();//记录失败原因
+            $errMsg = sprintf('run sql error:%s retry:%d', $e->getMessage(), $retryTimes);
             $eTime = microtime(true);
             SqlRecorder::record($sql, $sTime, $cTime, $eTime, false, $data, $errMsg);
             if ($this->isBreak($e)) {
@@ -115,6 +115,10 @@ final class DB extends DBAbstract implements DBInterface
      */
     protected function isBreak(\Exception $e): bool
     {
+        if (in_array($e->getCode(), [2006, 2013])) {
+            //通过错误码判断
+            return true;
+        }
         $breakMatchStr = [
             'server has gone away',
             'no connection to the server',
