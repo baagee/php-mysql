@@ -219,11 +219,13 @@ class FasterTable
      * @param string $column     列
      * @param array  $conditions 条件
      * @param int    $step       步长
+     * @return int
      * @throws \Exception
      */
     public function increment(string $column, array $conditions, int $step = 1)
     {
-        $this->simpleTable->where($conditions)->update([$column => new Expression(sprintf('%s + %d', $column, $step))]);
+        return $this->update([$column => new Expression(sprintf('%s + %d', $column, $step))], $conditions);
+        // return $this->simpleTable->where($conditions)->update([$column => new Expression(sprintf('%s + %d', $column, $step))]);
     }
 
     /**
@@ -231,11 +233,13 @@ class FasterTable
      * @param string $column     列
      * @param array  $conditions 条件
      * @param int    $step       步长
+     * @return int
      * @throws \Exception
      */
     public function decrement(string $column, array $conditions, int $step = 1)
     {
-        $this->simpleTable->where($conditions)->update([$column => new Expression(sprintf('%s - %d', $column, $step))]);
+        return $this->update([$column => new Expression(sprintf('%s - %d', $column, $step))], $conditions);
+        // return $this->simpleTable->where($conditions)->update([$column => new Expression(sprintf('%s - %d', $column, $step))]);
     }
 
     /**
